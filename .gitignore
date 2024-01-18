@@ -1,0 +1,32 @@
+# Compiled binary
+*.exe
+*.out
+*.test
+
+# Log files
+*.log
+*.log.*
+*.tmp
+*.bak
+
+# IDE or editor-specific files
+.idea/
+.vscode/
+*.sublime-workspace
+*.vscode-workspace
+.DS_Store
+
+# Dependency directories
+vendor/
+
+# Configuration files
+app.env
+config.toml
+config.yaml
+config.json
+
+# Build or output directories
+bin/
+pkg/
+dist/
+tmp/

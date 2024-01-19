@@ -50,6 +50,7 @@ func (server *Server) setupRouter() {
 	router.POST("/api/user/login", server.loginUser)
 	authenticatedRouter.GET("/api/user/:id", server.getUserById)
 	authenticatedRouter.PATCH("/api/user/:id", server.updateUser)
+	authenticatedRouter.PATCH("/api/user/:id/password", server.changeUserPassword)
 
 	server.router = router
 }

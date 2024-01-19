@@ -21,7 +21,7 @@ type userResponse struct {
 	PhoneNumber       string    `json:"phone_number"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
-	PasswordChangedAt  time.Time `json:"password_changed_at"`
+	PasswordChangedAt time.Time `json:"password_changed_at"`
 }
 
 type registerUserRequest struct {
@@ -33,6 +33,7 @@ type registerUserRequest struct {
 
 type registerUserResponse struct {
 	AccessToken string        `json:"access_token"`
+	Message     string        `json:"message"`
 	User        *userResponse `json:"user"`
 }
 
@@ -81,8 +82,12 @@ func (server *Server) registerUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-
-	ctx.JSON(http.StatusOK, &registerUserResponse{User: returnUserResponse(&user), AccessToken: accessToken})
+	response := &registerUserResponse{
+		User:        returnUserResponse(&user),
+		AccessToken: accessToken,
+		Message:     "registration successful",
+	}
+	ctx.JSON(http.StatusOK, response)
 }
 
 func returnUserResponse(user *db.User) *userResponse {
@@ -106,6 +111,7 @@ type loginUserRequest struct {
 
 type loginUserResponse struct {
 	AccessToken string       `json:"access_token"`
+	Message     string       `json:"message"`
 	User        userResponse `json:"user"`
 }
 
@@ -150,6 +156,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	loginUserData := &loginUserResponse{
 		AccessToken: accessToken,
 		User:        *returnUserResponse(&user),
+		Message:     "login successful",
 	}
 
 	ctx.JSON(http.StatusOK, loginUserData)
@@ -201,6 +208,11 @@ type updateUserRequest struct {
 	PhoneNumber string `json:"phone_number"`
 }
 
+type updateUserResponse struct {
+	Message string        `json:"message"`
+	User    *userResponse `json:"user"`
+}
+
 // @Summary Update user information
 // @Description Update user information based on the provided user ID
 // @Tags user
@@ -208,7 +220,7 @@ type updateUserRequest struct {
 // @Produce json
 // @Param id path string true "User ID" format(uuid)
 // @Param request body updateUserRequest true "User update details"
-// @Success 200 {object} userResponse "User information updated successfully"
+// @Success 200 {object} updateUserResponse "User information updated successfully"
 // @Security BearerAuth
 // @Router /user/{id} [patch]
 func (server *Server) updateUser(ctx *gin.Context) {
@@ -259,5 +271,85 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, returnUserResponse(&user))
+	response := &updateUserResponse{
+		Message: "user information has been successfully updated",
+		User:    returnUserResponse(&user),
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
+type changeUserPasswordParam struct {
+	ID string `uri:"id" binding:"required"`
+}
+
+type changeUserPasswordRequest struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}
+
+type changeUserPasswordResponse struct {
+	Message string        `json:"message"`
+	User    *userResponse `json:"user"`
+}
+
+// @Summary Change user password
+// @Description Change user password based on the provided user ID
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID" format(uuid)
+// @Param request body changeUserPasswordRequest true "User password update details"
+// @Success 200 {object} changeUserPasswordResponse "User password updated successfully"
+// @Security BearerAuth
+// @Router /user/{id}/password [patch]
+func (server *Server) changeUserPassword(ctx *gin.Context) {
+	var req changeUserPasswordRequest
+	var param changeUserPasswordParam
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	if err := ctx.ShouldBindUri(&param); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	id, err := uuid.Parse(param.ID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserById(ctx, id)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	err = util.CheckPassword(req.OldPassword, user.Password)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	newHashedPassword, err := util.HashedPassword(req.NewPassword)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	user, err = server.store.UpdateUserPassword(ctx, db.UpdateUserPasswordParams{ID: id, Password: newHashedPassword})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+	}
+
+	response := &changeUserPasswordResponse{
+		Message: "user password has been successfully updated",
+		User:    returnUserResponse(&user),
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }

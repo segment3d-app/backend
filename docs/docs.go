@@ -160,7 +160,54 @@ const docTemplate = `{
                     "200": {
                         "description": "User information updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/api.userResponse"
+                            "$ref": "#/definitions/api.updateUserResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/{id}/password": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Change user password based on the provided user ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Change user password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "User password update details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.changeUserPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User password updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.changeUserPasswordResponse"
                         }
                     }
                 }
@@ -168,6 +215,28 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.changeUserPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "new_password": {
+                    "type": "string"
+                },
+                "old_password": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.changeUserPasswordResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/api.userResponse"
+                }
+            }
+        },
         "api.loginUserRequest": {
             "type": "object",
             "properties": {
@@ -183,6 +252,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "access_token": {
+                    "type": "string"
+                },
+                "message": {
                     "type": "string"
                 },
                 "user": {
@@ -222,6 +294,9 @@ const docTemplate = `{
                 "access_token": {
                     "type": "string"
                 },
+                "message": {
+                    "type": "string"
+                },
                 "user": {
                     "$ref": "#/definitions/api.userResponse"
                 }
@@ -241,6 +316,17 @@ const docTemplate = `{
                 },
                 "phone_number": {
                     "type": "string"
+                }
+            }
+        },
+        "api.updateUserResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/api.userResponse"
                 }
             }
         },

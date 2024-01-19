@@ -1,5 +1,19 @@
 basePath: /api
 definitions:
+  api.changeUserPasswordRequest:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    type: object
+  api.changeUserPasswordResponse:
+    properties:
+      message:
+        type: string
+      user:
+        $ref: '#/definitions/api.userResponse'
+    type: object
   api.loginUserRequest:
     properties:
       password:
@@ -10,6 +24,8 @@ definitions:
   api.loginUserResponse:
     properties:
       access_token:
+        type: string
+      message:
         type: string
       user:
         $ref: '#/definitions/api.userResponse'
@@ -37,6 +53,8 @@ definitions:
     properties:
       access_token:
         type: string
+      message:
+        type: string
       user:
         $ref: '#/definitions/api.userResponse'
     type: object
@@ -50,6 +68,13 @@ definitions:
         type: string
       phone_number:
         type: string
+    type: object
+  api.updateUserResponse:
+    properties:
+      message:
+        type: string
+      user:
+        $ref: '#/definitions/api.userResponse'
     type: object
   api.userResponse:
     properties:
@@ -126,10 +151,40 @@ paths:
         "200":
           description: User information updated successfully
           schema:
-            $ref: '#/definitions/api.userResponse'
+            $ref: '#/definitions/api.updateUserResponse'
       security:
       - BearerAuth: []
       summary: Update user information
+      tags:
+      - user
+  /user/{id}/password:
+    patch:
+      consumes:
+      - application/json
+      description: Change user password based on the provided user ID
+      parameters:
+      - description: User ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User password update details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.changeUserPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User password updated successfully
+          schema:
+            $ref: '#/definitions/api.changeUserPasswordResponse'
+      security:
+      - BearerAuth: []
+      summary: Change user password
       tags:
       - user
   /user/login:

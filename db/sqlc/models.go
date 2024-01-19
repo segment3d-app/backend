@@ -12,14 +12,14 @@ import (
 )
 
 type User struct {
-	ID               uuid.UUID      `json:"id"`
-	Username         string         `json:"username"`
-	Email            string         `json:"email"`
-	Password         string         `json:"password"`
-	PhoneNumber      sql.NullString `json:"phone_number"`
-	FullName         sql.NullString `json:"full_name"`
-	Avatar           sql.NullString `json:"avatar"`
-	CreatedAt        time.Time      `json:"created_at"`
-	UpdatedAt        time.Time      `json:"updated_at"`
-	PasswordChangeAt time.Time      `json:"password_change_at"`
+	ID                uuid.UUID      `json:"id"`
+	Username          string         `json:"username"`
+	Email             string         `json:"email"`
+	Password          string         `json:"password"`
+	PhoneNumber       sql.NullString `json:"phone_number"`
+	FullName          sql.NullString `json:"full_name"`
+	Avatar            sql.NullString `json:"avatar"`
+	CreatedAt         time.Time      `json:"created_at"`
+	UpdatedAt         time.Time      `json:"updated_at"`
+	PasswordChangedAt time.Time      `json:"password_changed_at"`
 }

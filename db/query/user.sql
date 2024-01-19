@@ -31,6 +31,6 @@ RETURNING *;
 -- name: UpdateUserPassword :one
 UPDATE "user"
 SET password = $2,
-    password_change_at = now()
+    password_changed_at = now()
 WHERE id = $1
 RETURNING *;

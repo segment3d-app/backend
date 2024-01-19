@@ -22,7 +22,7 @@ INSERT INTO "user" (
         avatar
     )
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, username, email, password, phone_number, full_name, avatar, created_at, updated_at, password_change_at
+RETURNING id, username, email, password, phone_number, full_name, avatar, created_at, updated_at, password_changed_at
 `
 
 type CreateUserParams struct {
@@ -54,13 +54,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Avatar,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.PasswordChangeAt,
+		&i.PasswordChangedAt,
 	)
 	return i, err
 }
 
 const getAccountByUsername = `-- name: GetAccountByUsername :one
-SELECT id, username, email, password, phone_number, full_name, avatar, created_at, updated_at, password_change_at
+SELECT id, username, email, password, phone_number, full_name, avatar, created_at, updated_at, password_changed_at
 FROM "user"
 WHERE username = $1
 LIMIT 1
@@ -79,13 +79,13 @@ func (q *Queries) GetAccountByUsername(ctx context.Context, username string) (Us
 		&i.Avatar,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.PasswordChangeAt,
+		&i.PasswordChangedAt,
 	)
 	return i, err
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, username, email, password, phone_number, full_name, avatar, created_at, updated_at, password_change_at
+SELECT id, username, email, password, phone_number, full_name, avatar, created_at, updated_at, password_changed_at
 FROM "user"
 WHERE id = $1
 LIMIT 1
@@ -104,7 +104,7 @@ func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.Avatar,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.PasswordChangeAt,
+		&i.PasswordChangedAt,
 	)
 	return i, err
 }
@@ -117,7 +117,7 @@ SET email = $2,
     avatar = $5,
     updated_at = now()
 WHERE id = $1
-RETURNING id, username, email, password, phone_number, full_name, avatar, created_at, updated_at, password_change_at
+RETURNING id, username, email, password, phone_number, full_name, avatar, created_at, updated_at, password_changed_at
 `
 
 type UpdateUserParams struct {
@@ -147,7 +147,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.Avatar,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.PasswordChangeAt,
+		&i.PasswordChangedAt,
 	)
 	return i, err
 }
@@ -155,9 +155,9 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 const updateUserPassword = `-- name: UpdateUserPassword :one
 UPDATE "user"
 SET password = $2,
-    password_change_at = now()
+    password_changed_at = now()
 WHERE id = $1
-RETURNING id, username, email, password, phone_number, full_name, avatar, created_at, updated_at, password_change_at
+RETURNING id, username, email, password, phone_number, full_name, avatar, created_at, updated_at, password_changed_at
 `
 
 type UpdateUserPasswordParams struct {
@@ -178,7 +178,7 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 		&i.Avatar,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.PasswordChangeAt,
+		&i.PasswordChangedAt,
 	)
 	return i, err
 }

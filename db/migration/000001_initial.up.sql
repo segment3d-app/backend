@@ -9,5 +9,5 @@ CREATE TABLE "user" (
     "avatar" varchar(255),
     "created_at" timestamptz NOT NULL DEFAULT now(),
     "updated_at" timestamptz NOT NULL DEFAULT now(),
-    "password_change_at" timestamptz NOT NULL DEFAULT now()
+    "password_changed_at" timestamptz NOT NULL DEFAULT now()
 )

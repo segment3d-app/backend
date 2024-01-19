@@ -14,14 +14,14 @@ import (
 
 type userResponse struct {
 	ID                string    `json:"id"`
+	Avatar            string    `json:"avatar"`
 	Username          string    `json:"username"`
 	FullName          string    `json:"full_name"`
 	Email             string    `json:"email"`
 	PhoneNumber       string    `json:"phone_number"`
-	PasswordChangedAt time.Time `json:"password_changed_at"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
-	PasswordChangeAt  time.Time `json:"password_change_at"`
+	PasswordChangedAt  time.Time `json:"password_changed_at"`
 }
 
 type registerUserRequest struct {
@@ -43,9 +43,6 @@ type registerUserResponse struct {
 // @Produce json
 // @Param request body registerUserRequest true "User registration details"
 // @Success 200 {object} registerUserResponse "User registration successful"
-// @Failure 400 {object} ErrorResponse "Bad Request"
-// @Failure 403 {object} ErrorResponse "Forbidden"
-// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /user/signup [post]
 func (server *Server) registerUser(ctx *gin.Context) {
 	var req registerUserRequest
@@ -91,14 +88,14 @@ func (server *Server) registerUser(ctx *gin.Context) {
 func returnUserResponse(user *db.User) *userResponse {
 	return &userResponse{
 		ID:                user.ID.String(),
+		Avatar:            user.Avatar.String,
 		Username:          user.Username,
 		FullName:          user.FullName.String,
 		Email:             user.Email,
 		PhoneNumber:       user.PhoneNumber.String,
-		PasswordChangedAt: user.PasswordChangeAt,
-		CreatedAt:         user.PasswordChangeAt,
+		PasswordChangedAt: user.PasswordChangedAt,
+		CreatedAt:         user.CreatedAt,
 		UpdatedAt:         user.UpdatedAt,
-		PasswordChangeAt:  user.PasswordChangeAt,
 	}
 }
 
@@ -119,9 +116,6 @@ type loginUserResponse struct {
 // @Produce json
 // @Param request body loginUserRequest true "User login details"
 // @Success 200 {object} loginUserResponse "User login successful"
-// @Failure 400 {object} ErrorResponse "Bad Request"
-// @Failure 404 {object} ErrorResponse "User not found"
-// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /user/login [post]
 func (server *Server) loginUser(ctx *gin.Context) {
 	var req loginUserRequest
@@ -161,7 +155,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, loginUserData)
 }
 
-type getUserByIdRequest struct {
+type getUserByIdParam struct {
 	ID string `uri:"id" binding:"required,uuid"`
 }
 
@@ -172,13 +166,10 @@ type getUserByIdRequest struct {
 // @Produce json
 // @Param id path string true "User ID" format(uuid)
 // @Success 200 {object} userResponse "User information retrieved successfully"
-// @Failure 400 {object} ErrorResponse "Bad Request"
-// @Failure 404 {object} ErrorResponse "User not found"
-// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Security BearerAuth
 // @Router /user/{id} [get]
 func (server *Server) getUserById(ctx *gin.Context) {
-	var req getUserByIdRequest
+	var req getUserByIdParam
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -193,6 +184,78 @@ func (server *Server) getUserById(ctx *gin.Context) {
 
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, returnUserResponse(&user))
+}
+
+type updateUserParam struct {
+	ID string `uri:"id" binding:"required"`
+}
+
+type updateUserRequest struct {
+	Avatar      string `json:"avatar"`
+	FullName    string `json:"full_name"`
+	Email       string `json:"email"`
+	PhoneNumber string `json:"phone_number"`
+}
+
+// @Summary Update user information
+// @Description Update user information based on the provided user ID
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID" format(uuid)
+// @Param request body updateUserRequest true "User update details"
+// @Success 200 {object} userResponse "User information updated successfully"
+// @Security BearerAuth
+// @Router /user/{id} [patch]
+func (server *Server) updateUser(ctx *gin.Context) {
+	var param updateUserParam
+	var req updateUserRequest
+	if err := ctx.ShouldBindUri(&param); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	id, err := uuid.Parse(param.ID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserById(ctx, id)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	avatar := req.Avatar
+	fullName := req.FullName
+	email := req.Email
+	phoneNumber := req.PhoneNumber
+	if len(avatar) == 0 {
+		avatar = user.Avatar.String
+	}
+	if len(fullName) == 0 {
+		fullName = user.FullName.String
+	}
+	if len(email) == 0 {
+		email = user.Email
+	}
+	if len(phoneNumber) == 0 {
+		phoneNumber = user.PhoneNumber.String
+	}
+
+	user, err = server.store.UpdateUser(ctx, db.UpdateUserParams{ID: id, Avatar: sql.NullString{Valid: true, String: avatar}, Email: email, PhoneNumber: sql.NullString{Valid: true, String: phoneNumber}, FullName: sql.NullString{Valid: true, String: fullName}})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 

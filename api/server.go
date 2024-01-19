@@ -37,21 +37,6 @@ func (server *Server) Start(address string) error {
 	return server.router.Run(address)
 }
 
-// @title Segment3d App API Documentation
-// @version 1.0
-// @description This is a documentation for Segment3d App API
-// @termsOfService http://swagger.io/terms/
-
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-
-// @host localhost:8080
-// @BasePath /api
-
-// @securityDefinitions.apikey ApiKeyAuth
-// @in header
-// @name Authorization
 func (server *Server) setupRouter() {
 	router := gin.Default()
 	authenticatedRouter := router.Group("/").Use(authMiddleware(server.tokenMaker))

@@ -1,3 +1,4 @@
+basePath: /api
 definitions:
   api.ErrorResponse:
     properties:
@@ -65,8 +66,12 @@ definitions:
       username:
         type: string
     type: object
+host: localhost:8080
 info:
   contact: {}
+  description: This is a documentation for Segment3d App API
+  title: Segment3d App API Documentation
+  version: "1.0"
 paths:
   /user/{id}:
     get:
@@ -100,7 +105,7 @@ paths:
           schema:
             $ref: '#/definitions/api.ErrorResponse'
       security:
-      - ApiKeyAuth: []
+      - BearerAuth: []
       summary: Get user by ID
       tags:
       - user
@@ -172,4 +177,9 @@ paths:
       summary: Register a new user
       tags:
       - user
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

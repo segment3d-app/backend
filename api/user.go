@@ -162,7 +162,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 }
 
 type getUserByIdRequest struct {
-	ID uuid.UUID `uri:"id" binding:"required"`
+	ID string `uri:"id" binding:"required,uuid"`
 }
 
 // @Summary Get user by ID
@@ -175,16 +175,21 @@ type getUserByIdRequest struct {
 // @Failure 400 {object} ErrorResponse "Bad Request"
 // @Failure 404 {object} ErrorResponse "User not found"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
-// @Security ApiKeyAuth
+// @Security BearerAuth
 // @Router /user/{id} [get]
 func (server *Server) getUserById(ctx *gin.Context) {
 	var req getUserByIdRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	user, err := server.store.GetUserById(ctx, req.ID)
+	ID, err := uuid.Parse(req.ID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+	}
+
+	user, err := server.store.GetUserById(ctx, ID)
 
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, errorResponse(err))

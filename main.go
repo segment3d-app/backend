@@ -12,6 +12,16 @@ import (
 	_ "github.com/swaggo/gin-swagger"
 )
 
+// @title Segment3d App API Documentation
+// @version 1.0
+// @description This is a documentation for Segment3d App API
+
+// @host localhost:8080
+// @BasePath /api
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	config, err := util.LoadConfig(".")
 	if err != nil {

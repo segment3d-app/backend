@@ -97,7 +97,7 @@ swag i
 
 # API Documentation
 
-To access the API documentation, visit the Swagger documentation at `http://localhost:8080/swagger` after starting the server.
+To access the API documentation, visit the Swagger documentation at `http://localhost:8080/swagger/index.html` after starting the server.
 
 ## License
 

@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	db "github.com/segment3d-app/segment3d-be/db/sqlc"
 	"github.com/segment3d-app/segment3d-be/docs"
@@ -45,14 +47,29 @@ func (server *Server) setupRouter() {
 	docs.SwaggerInfo.BasePath = "/api"
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
+	// auth api
+	router.POST("/api/auth/signin", server.signin)
+	router.POST("/api/auth/signup", server.signup)
+
 	// user api
-	router.POST("/api/user/signup", server.registerUser)
-	router.POST("/api/user/login", server.loginUser)
-	authenticatedRouter.GET("/api/user/:id", server.getUserById)
-	authenticatedRouter.PATCH("/api/user/:id", server.updateUser)
-	authenticatedRouter.PATCH("/api/user/:id/password", server.changeUserPassword)
+	authenticatedRouter.GET("/api/user", server.getUserData)
+	authenticatedRouter.PATCH("/api/user", server.updateUser)
+	authenticatedRouter.PATCH("/api/user/password", server.changeUserPassword)
 
 	server.router = router
+}
+
+func getUserPayload(ctx *gin.Context) (*token.Payload, error) {
+	payload, exists := ctx.Get(authorizationPayloadKey)
+	if !exists {
+		return nil, fmt.Errorf("payload is missing")
+	}
+	userPayload, ok := payload.(*token.Payload)
+	if !ok {
+		return nil, fmt.Errorf("payload structure is not corrent")
+	}
+
+	return userPayload, nil
 }
 
 func errorResponse(err error) gin.H {

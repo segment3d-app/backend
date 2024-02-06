@@ -11,11 +11,11 @@ import (
 )
 
 type Querier interface {
-	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
-	GetAccountByUsername(ctx context.Context, username string) (User, error)
-	GetUserById(ctx context.Context, id uuid.UUID) (User, error)
-	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
-	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (Users, error)
+	GetUserByEmail(ctx context.Context, email string) (Users, error)
+	GetUserById(ctx context.Context, uid uuid.UUID) (Users, error)
+	UpdateUser(ctx context.Context, arg UpdateUserParams) (Users, error)
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (Users, error)
 }
 
 var _ Querier = (*Queries)(nil)

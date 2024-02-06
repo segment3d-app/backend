@@ -15,20 +15,20 @@ var (
 type Payload struct {
 	ID        uuid.UUID `json:"id"`
 	Email     string    `json:"email"`
-	IssuedAt  time.Time `json:"issued_at"`
-	ExpiredAt time.Time `json:"expired_at"`
+	IssuedAt  time.Time `json:"issuedAt"`
+	ExpiredAt time.Time `json:"expiredAt"`
 }
 
 func (payload *Payload) GetAudience() (jwt.ClaimStrings, error) {
-	panic("unimplemented")
+	return jwt.ClaimStrings{payload.Email}, nil
 }
 
 func (payload *Payload) GetExpirationTime() (*jwt.NumericDate, error) {
-	panic("unimplemented")
+	return &jwt.NumericDate{Time: payload.ExpiredAt}, nil
 }
 
 func (payload *Payload) GetIssuedAt() (*jwt.NumericDate, error) {
-	panic("unimplemented")
+	return &jwt.NumericDate{Time: payload.IssuedAt}, nil
 }
 
 func (payload *Payload) GetIssuer() (string, error) {
@@ -36,11 +36,11 @@ func (payload *Payload) GetIssuer() (string, error) {
 }
 
 func (payload *Payload) GetNotBefore() (*jwt.NumericDate, error) {
-	panic("unimplemented")
+	return &jwt.NumericDate{Time: payload.IssuedAt}, nil
 }
 
 func (payload *Payload) GetSubject() (string, error) {
-	panic("unimplemented")
+	return payload.Email, nil
 }
 
 func (payload *Payload) Valid() error {

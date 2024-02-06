@@ -28,29 +28,26 @@ func (maker *JWTMaker) CreateToken(email string, duration time.Duration) (string
 	return tokenString, nil
 }
 
-func (maker *JWTMaker) VerifyToken(tokenString string) (*Payload, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
+	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, ErrInvalidToken
 		}
-		return maker.symmetricKey, nil
-	})
+		return []byte(maker.symmetricKey), nil
+	}
 
+	jwtToken, err := jwt.ParseWithClaims(token, &Payload{}, keyFunc)
 	if err != nil {
 		return nil, err
 	}
 
-	claims, ok := token.Claims.(*Payload)
-	if !ok || !token.Valid {
-		return nil, fmt.Errorf("invalid token")
+	payload, ok := jwtToken.Claims.(*Payload)
+	if !ok {
+		return nil, ErrInvalidToken
 	}
 
-	if err := claims.Valid(); err != nil {
-		return nil, err
-	}
-
-	return claims, nil
+	return payload, nil
 }
 
 func NewJWTMaker(secretKey string) (Maker, error) {

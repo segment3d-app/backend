@@ -11,15 +11,60 @@ import (
 	"github.com/google/uuid"
 )
 
-type User struct {
-	ID                uuid.UUID      `json:"id"`
-	Username          string         `json:"username"`
+type Assets struct {
+	ID            uuid.UUID      `json:"id"`
+	Uid           uuid.NullUUID  `json:"uid"`
+	Title         string         `json:"title"`
+	Slug          string         `json:"slug"`
+	ThumbnailUrl  sql.NullString `json:"thumbnailUrl"`
+	GaussianUrl   sql.NullString `json:"gaussianUrl"`
+	PointCloudUrl sql.NullString `json:"pointCloudUrl"`
+	IsPrivate     bool           `json:"isPrivate"`
+	Likes         int32          `json:"likes"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+}
+
+type AssetsToTags struct {
+	AssetsId  uuid.UUID `json:"assetsId"`
+	TagsId    uuid.UUID `json:"tagsId"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type Likes struct {
+	ID        uuid.UUID     `json:"id"`
+	Uid       uuid.NullUUID `json:"uid"`
+	AssetsId  uuid.NullUUID `json:"assetsId"`
+	CreatedAt time.Time     `json:"createdAt"`
+	UpdatedAt time.Time     `json:"updatedAt"`
+}
+
+type Tags struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Slug      string    `json:"slug"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type Tasks struct {
+	ID        uuid.UUID     `json:"id"`
+	Uid       uuid.NullUUID `json:"uid"`
+	Title     string        `json:"title"`
+	Status    string        `json:"status"`
+	Url       string        `json:"url"`
+	CreatedAt time.Time     `json:"createdAt"`
+	UpdatedAt time.Time     `json:"updatedAt"`
+}
+
+type Users struct {
+	Uid               uuid.UUID      `json:"uid"`
+	Name              sql.NullString `json:"name"`
 	Email             string         `json:"email"`
-	Password          string         `json:"password"`
-	PhoneNumber       sql.NullString `json:"phone_number"`
-	FullName          sql.NullString `json:"full_name"`
 	Avatar            sql.NullString `json:"avatar"`
-	CreatedAt         time.Time      `json:"created_at"`
-	UpdatedAt         time.Time      `json:"updated_at"`
-	PasswordChangedAt time.Time      `json:"password_changed_at"`
+	Password          string         `json:"password"`
+	CreatedAt         time.Time      `json:"createdAt"`
+	UpdatedAt         time.Time      `json:"updatedAt"`
+	PasswordChangedAt time.Time      `json:"passwordChangedAt"`
 }

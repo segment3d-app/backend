@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/user/login": {
+        "/auth/signin": {
             "post": {
                 "description": "Login user with the provided credentials",
                 "consumes": [
@@ -25,7 +25,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "auth"
                 ],
                 "summary": "Login user",
                 "parameters": [
@@ -49,7 +49,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/user/signup": {
+        "/auth/signup": {
             "post": {
                 "description": "Register a new user with the provided details",
                 "consumes": [
@@ -59,7 +59,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "auth"
                 ],
                 "summary": "Register a new user",
                 "parameters": [
@@ -83,14 +83,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/user/{id}": {
+        "/user": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve user information based on the provided user ID",
+                "description": "Retrieve user information",
                 "consumes": [
                     "application/json"
                 ],
@@ -100,22 +100,12 @@ const docTemplate = `{
                 "tags": [
                     "user"
                 ],
-                "summary": "Get user by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
+                "summary": "Get user data",
                 "responses": {
                     "200": {
                         "description": "User information retrieved successfully",
                         "schema": {
-                            "$ref": "#/definitions/api.userResponse"
+                            "$ref": "#/definitions/api.UserResponse"
                         }
                     }
                 }
@@ -139,14 +129,6 @@ const docTemplate = `{
                 "summary": "Update user information",
                 "parameters": [
                     {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "description": "User update details",
                         "name": "request",
                         "in": "body",
@@ -166,7 +148,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/user/{id}/password": {
+        "/user/password": {
             "patch": {
                 "security": [
                     {
@@ -185,14 +167,6 @@ const docTemplate = `{
                 ],
                 "summary": "Change user password",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "description": "User password update details",
                         "name": "request",
@@ -215,13 +189,39 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.UserResponse": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "passwordChangedAt": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "api.changeUserPasswordRequest": {
             "type": "object",
             "properties": {
-                "new_password": {
+                "newPassword": {
                     "type": "string"
                 },
-                "old_password": {
+                "oldPassword": {
                     "type": "string"
                 }
             }
@@ -233,17 +233,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/api.userResponse"
+                    "$ref": "#/definitions/api.UserResponse"
                 }
             }
         },
         "api.loginUserRequest": {
             "type": "object",
             "properties": {
-                "password": {
+                "email": {
                     "type": "string"
                 },
-                "username": {
+                "password": {
                     "type": "string"
                 }
             }
@@ -251,14 +251,14 @@ const docTemplate = `{
         "api.loginUserResponse": {
             "type": "object",
             "properties": {
-                "access_token": {
+                "accessToken": {
                     "type": "string"
                 },
                 "message": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/api.userResponse"
+                    "$ref": "#/definitions/api.UserResponse"
                 }
             }
         },
@@ -266,9 +266,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
-                "password",
-                "phone_number",
-                "username"
+                "password"
             ],
             "properties": {
                 "email": {
@@ -277,28 +275,20 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "minLength": 8
-                },
-                "phone_number": {
-                    "type": "string",
-                    "maxLength": 12,
-                    "minLength": 10
-                },
-                "username": {
-                    "type": "string"
                 }
             }
         },
         "api.registerUserResponse": {
             "type": "object",
             "properties": {
-                "access_token": {
+                "accessToken": {
                     "type": "string"
                 },
                 "message": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/api.userResponse"
+                    "$ref": "#/definitions/api.UserResponse"
                 }
             }
         },
@@ -308,13 +298,7 @@ const docTemplate = `{
                 "avatar": {
                     "type": "string"
                 },
-                "email": {
-                    "type": "string"
-                },
-                "full_name": {
-                    "type": "string"
-                },
-                "phone_number": {
+                "name": {
                     "type": "string"
                 }
             }
@@ -326,39 +310,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/api.userResponse"
-                }
-            }
-        },
-        "api.userResponse": {
-            "type": "object",
-            "properties": {
-                "avatar": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "full_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "password_changed_at": {
-                    "type": "string"
-                },
-                "phone_number": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
+                    "$ref": "#/definitions/api.UserResponse"
                 }
             }
         }

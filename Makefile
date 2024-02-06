@@ -1,10 +1,10 @@
-run-container: 
+run-postgres: 
 	docker run --name segment3d-db -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=postgres -d postgres:12.17-alpine3.19
 
-db-up: 
+postgres-up: 
 	docker start segment3d-db
 
-db-down: 
+postgres-down: 
 	docker stop segment3d-db
 
 create-db: 
@@ -27,6 +27,9 @@ server-dev:
 
 server-prod:
 	go run main.go
+
+swagger:
+	swag i
 
 test:
 	go test ./... -cover -v

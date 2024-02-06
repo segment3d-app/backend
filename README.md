@@ -67,7 +67,7 @@ Ensure you have the following tools installed on your machine:
 1. **Create PostgreSQL Container simply by running makefile script:**
 
    ```bash
-    make run-container
+    make run-postgres
    ```
 
 2. **Create Database Schema:**
@@ -86,13 +86,7 @@ Ensure you have the following tools installed on your machine:
 ### Running the Server
 
 ```bash
-go run main.go
-```
-
-### Generate New Swagger Documentation
-
-```bash
-swag i
+make server-dev
 ```
 
 # API Documentation

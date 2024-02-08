@@ -50,6 +50,7 @@ func (server *Server) setupRouter() {
 	// auth api
 	router.POST("/api/auth/signin", server.signin)
 	router.POST("/api/auth/signup", server.signup)
+	router.POST("/api/auth/google", server.google)
 
 	// user api
 	authenticatedRouter.GET("/api/user", server.getUserData)

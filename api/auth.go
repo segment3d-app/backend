@@ -2,12 +2,16 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 	db "github.com/segment3d-app/segment3d-be/db/sqlc"
 	"github.com/segment3d-app/segment3d-be/util"
+	"golang.org/x/oauth2"
 )
 
 type registerUserRequest struct {
@@ -43,7 +47,7 @@ func (server *Server) signup(ctx *gin.Context) {
 
 	arg := db.CreateUserParams{
 		Email:    req.Email,
-		Password: hashedPassword,
+		Password: sql.NullString{String: hashedPassword, Valid: true},
 	}
 
 	user, err := server.store.CreateUser(ctx, arg)
@@ -72,10 +76,9 @@ func (server *Server) signup(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-
 type loginUserRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required,alphanum,min=8"`
 }
 
 type loginUserResponse struct {
@@ -110,7 +113,7 @@ func (server *Server) signin(ctx *gin.Context) {
 		return
 	}
 
-	err = util.CheckPassword(req.Password, user.Password)
+	err = util.CheckPassword(req.Password, user.Password.String)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -129,4 +132,101 @@ func (server *Server) signin(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, loginUserData)
+}
+
+type googleRequest struct {
+	Token string `json:"token" binding:"required"`
+}
+
+type googleUserInfo struct {
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+	Picture string `json:"picture"`
+}
+
+type googleResponse struct {
+	AccessToken string       `json:"accessToken"`
+	Message     string       `json:"message"`
+	User        UserResponse `json:"user"`
+}
+
+// @Summary Google Auth
+// @Description Authenticate user with Google OAuth token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body googleRequest true "Google OAuth token"
+// @Success 200 {object} map[string]interface{} "User info from Google"
+// @Router /auth/google [post]
+func (server *Server) google(ctx *gin.Context) {
+	var req googleRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: req.Token})
+	httpClient := oauth2.NewClient(ctx, tokenSource)
+	resp, err := httpClient.Get("https://www.googleapis.com/oauth2/v3/userinfo")
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("failed to read response body: %v", err)))
+	}
+
+	var userInfo googleUserInfo
+	if err := json.Unmarshal(body, &userInfo); err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("failed to unmarshal user info: %v", err)))
+		return
+	}
+
+	var newUser = false
+	user, err := server.store.GetUserByEmail(ctx, userInfo.Email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			newUser = true
+			user, err = server.store.CreateUser(ctx, db.CreateUserParams{
+				Email:  userInfo.Email,
+				Name:   sql.NullString{Valid: true, String: userInfo.Name},
+				Avatar: sql.NullString{Valid: true, String: userInfo.Picture},
+			})
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+				return
+			}
+		} else {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	}
+
+	if newUser {
+		user, err = server.store.UpdateUser(ctx, db.UpdateUserParams{Name: sql.NullString{String: userInfo.Name, Valid: true}, Avatar: sql.NullString{String: userInfo.Picture, Valid: true}, Email: userInfo.Email})
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		}
+	}
+
+	accessToken, err := server.tokenMaker.CreateToken(userInfo.Email, server.config.AccessTokenDuration)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	response := googleResponse{
+		AccessToken: accessToken,
+		Message:     "user information retrieved successfully",
+		User: UserResponse{
+			ID:     user.Uid.String(),
+			Email:  userInfo.Email,
+			Name:   userInfo.Name,
+			Avatar: userInfo.Picture,
+		},
+	}
+	ctx.JSON(http.StatusOK, response)
 }

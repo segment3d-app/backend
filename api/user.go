@@ -156,7 +156,7 @@ func (server *Server) changeUserPassword(ctx *gin.Context) {
 		return
 	}
 
-	err = util.CheckPassword(req.OldPassword, user.Password)
+	err = util.CheckPassword(req.OldPassword, user.Password.String)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -168,7 +168,7 @@ func (server *Server) changeUserPassword(ctx *gin.Context) {
 		return
 	}
 
-	user, err = server.store.UpdateUserPassword(ctx, db.UpdateUserPasswordParams{Uid: user.Uid, Password: newHashedPassword})
+	user, err = server.store.UpdateUserPassword(ctx, db.UpdateUserPasswordParams{Uid: user.Uid, Password: sql.NullString{String: newHashedPassword, Valid: true}})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 	}

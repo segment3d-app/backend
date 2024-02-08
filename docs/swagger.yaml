@@ -31,12 +31,23 @@ definitions:
       user:
         $ref: '#/definitions/api.UserResponse'
     type: object
+  api.googleRequest:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
   api.loginUserRequest:
     properties:
       email:
         type: string
       password:
+        minLength: 8
         type: string
+    required:
+    - email
+    - password
     type: object
   api.loginUserResponse:
     properties:
@@ -88,6 +99,29 @@ info:
   title: Segment3d App API Documentation
   version: "1.0"
 paths:
+  /auth/google:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with Google OAuth token
+      parameters:
+      - description: Google OAuth token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.googleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User info from Google
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Google Auth
+      tags:
+      - auth
   /auth/signin:
     post:
       consumes:

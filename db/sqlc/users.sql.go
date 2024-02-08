@@ -25,7 +25,7 @@ RETURNING uid, name, email, avatar, password, "createdAt", "updatedAt", "passwor
 
 type CreateUserParams struct {
 	Email    string         `json:"email"`
-	Password string         `json:"password"`
+	Password sql.NullString `json:"password"`
 	Name     sql.NullString `json:"name"`
 	Avatar   sql.NullString `json:"avatar"`
 }
@@ -144,8 +144,8 @@ RETURNING uid, name, email, avatar, password, "createdAt", "updatedAt", "passwor
 `
 
 type UpdateUserPasswordParams struct {
-	Uid      uuid.UUID `json:"uid"`
-	Password string    `json:"password"`
+	Uid      uuid.UUID      `json:"uid"`
+	Password sql.NullString `json:"password"`
 }
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (Users, error) {

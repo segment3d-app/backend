@@ -48,6 +48,7 @@ func (server *Server) signup(ctx *gin.Context) {
 	arg := db.CreateUserParams{
 		Email:    req.Email,
 		Password: sql.NullString{String: hashedPassword, Valid: true},
+		Provider: "credentials",
 	}
 
 	user, err := server.store.CreateUser(ctx, arg)
@@ -110,6 +111,11 @@ func (server *Server) signin(ctx *gin.Context) {
 		}
 
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if user.Provider != "credentials" {
+		ctx.JSON(http.StatusBadGateway, errorResponse(fmt.Errorf("please login using %s", user.Provider)))
 		return
 	}
 
@@ -191,9 +197,10 @@ func (server *Server) google(ctx *gin.Context) {
 		if err == sql.ErrNoRows {
 			newUser = true
 			user, err = server.store.CreateUser(ctx, db.CreateUserParams{
-				Email:  userInfo.Email,
-				Name:   sql.NullString{Valid: true, String: userInfo.Name},
-				Avatar: sql.NullString{Valid: true, String: userInfo.Picture},
+				Email:    userInfo.Email,
+				Name:     sql.NullString{Valid: true, String: userInfo.Name},
+				Avatar:   sql.NullString{Valid: true, String: userInfo.Picture},
+				Provider: "google",
 			})
 			if err != nil {
 				ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -206,10 +213,16 @@ func (server *Server) google(ctx *gin.Context) {
 	}
 
 	if newUser {
-		user, err = server.store.UpdateUser(ctx, db.UpdateUserParams{Name: sql.NullString{String: userInfo.Name, Valid: true}, Avatar: sql.NullString{String: userInfo.Picture, Valid: true}, Email: userInfo.Email})
+		user, err = server.store.UpdateUser(ctx, db.UpdateUserParams{Name: sql.NullString{String: userInfo.Name, Valid: true}, Avatar: sql.NullString{String: userInfo.Picture, Valid: true}, Email: userInfo.Email, Uid: user.Uid})
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
 		}
+	}
+
+	if user.Provider != "google" {
+		ctx.JSON(http.StatusBadGateway, errorResponse(fmt.Errorf("please login using %s", user.Provider)))
+		return
 	}
 
 	accessToken, err := server.tokenMaker.CreateToken(userInfo.Email, server.config.AccessTokenDuration)

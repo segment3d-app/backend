@@ -17,10 +17,11 @@ INSERT INTO "users" (
         email,
         password,
         name,
-        avatar
+        avatar,
+        provider
     )
-VALUES ($1, $2, $3, $4)
-RETURNING uid, name, email, avatar, password, "createdAt", "updatedAt", "passwordChangedAt"
+VALUES ($1, $2, $3, $4, $5)
+RETURNING uid, name, email, avatar, password, provider, "createdAt", "updatedAt", "passwordChangedAt"
 `
 
 type CreateUserParams struct {
@@ -28,6 +29,7 @@ type CreateUserParams struct {
 	Password sql.NullString `json:"password"`
 	Name     sql.NullString `json:"name"`
 	Avatar   sql.NullString `json:"avatar"`
+	Provider string         `json:"provider"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (Users, error) {
@@ -36,6 +38,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (Users, 
 		arg.Password,
 		arg.Name,
 		arg.Avatar,
+		arg.Provider,
 	)
 	var i Users
 	err := row.Scan(
@@ -44,6 +47,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (Users, 
 		&i.Email,
 		&i.Avatar,
 		&i.Password,
+		&i.Provider,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PasswordChangedAt,
@@ -52,7 +56,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (Users, 
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT uid, name, email, avatar, password, "createdAt", "updatedAt", "passwordChangedAt"
+SELECT uid, name, email, avatar, password, provider, "createdAt", "updatedAt", "passwordChangedAt"
 FROM "users"
 WHERE email = $1
 LIMIT 1
@@ -67,6 +71,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (Users, erro
 		&i.Email,
 		&i.Avatar,
 		&i.Password,
+		&i.Provider,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PasswordChangedAt,
@@ -75,7 +80,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (Users, erro
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT uid, name, email, avatar, password, "createdAt", "updatedAt", "passwordChangedAt"
+SELECT uid, name, email, avatar, password, provider, "createdAt", "updatedAt", "passwordChangedAt"
 FROM "users"
 WHERE uid = $1
 LIMIT 1
@@ -90,6 +95,7 @@ func (q *Queries) GetUserById(ctx context.Context, uid uuid.UUID) (Users, error)
 		&i.Email,
 		&i.Avatar,
 		&i.Password,
+		&i.Provider,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PasswordChangedAt,
@@ -104,7 +110,7 @@ SET email = $2,
     avatar = $4,
     "updatedAt" = now()
 WHERE uid = $1
-RETURNING uid, name, email, avatar, password, "createdAt", "updatedAt", "passwordChangedAt"
+RETURNING uid, name, email, avatar, password, provider, "createdAt", "updatedAt", "passwordChangedAt"
 `
 
 type UpdateUserParams struct {
@@ -128,6 +134,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (Users, 
 		&i.Email,
 		&i.Avatar,
 		&i.Password,
+		&i.Provider,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PasswordChangedAt,
@@ -140,7 +147,7 @@ UPDATE "users"
 SET password = $2,
     "passwordChangedAt" = now()
 WHERE uid = $1
-RETURNING uid, name, email, avatar, password, "createdAt", "updatedAt", "passwordChangedAt"
+RETURNING uid, name, email, avatar, password, provider, "createdAt", "updatedAt", "passwordChangedAt"
 `
 
 type UpdateUserPasswordParams struct {
@@ -157,6 +164,7 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 		&i.Email,
 		&i.Avatar,
 		&i.Password,
+		&i.Provider,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PasswordChangedAt,

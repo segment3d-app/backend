@@ -15,6 +15,7 @@ type UserResponse struct {
 	Email             string    `json:"email"`
 	Name              string    `json:"name"`
 	Avatar            string    `json:"avatar"`
+	Provider          string    `json:"provider"`
 	CreatedAt         time.Time `json:"createdAt"`
 	UpdatedAt         time.Time `json:"updatedAt"`
 	PasswordChangedAt time.Time `json:"passwordChangedAt"`
@@ -26,6 +27,7 @@ func ReturnUserResponse(user *db.Users) *UserResponse {
 		Avatar:            user.Avatar.String,
 		Name:              user.Name.String,
 		Email:             user.Email,
+		Provider:          user.Provider,
 		PasswordChangedAt: user.PasswordChangedAt,
 		CreatedAt:         user.CreatedAt,
 		UpdatedAt:         user.UpdatedAt,

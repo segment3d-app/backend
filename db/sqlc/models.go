@@ -64,6 +64,7 @@ type Users struct {
 	Email             string         `json:"email"`
 	Avatar            sql.NullString `json:"avatar"`
 	Password          sql.NullString `json:"password"`
+	Provider          string         `json:"provider"`
 	CreatedAt         time.Time      `json:"createdAt"`
 	UpdatedAt         time.Time      `json:"updatedAt"`
 	PasswordChangedAt time.Time      `json:"passwordChangedAt"`

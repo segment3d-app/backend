@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -52,7 +53,12 @@ func (server *Server) getUserData(ctx *gin.Context) {
 	user, err := server.store.GetUserByEmail(ctx, payload.Email)
 
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("user with email %s is not found", user.Email)))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
@@ -93,7 +99,12 @@ func (server *Server) updateUser(ctx *gin.Context) {
 
 	user, err := server.store.GetUserByEmail(ctx, payload.Email)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("user with email %s is not found", user.Email)))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
@@ -154,13 +165,18 @@ func (server *Server) changeUserPassword(ctx *gin.Context) {
 
 	user, err := server.store.GetUserByEmail(ctx, payload.Email)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("user with email %s is not found", user.Email)))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
 	err = util.CheckPassword(req.OldPassword, user.Password.String)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("old password doesn't match")))
 		return
 	}
 

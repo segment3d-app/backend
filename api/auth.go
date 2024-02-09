@@ -42,7 +42,7 @@ func (server *Server) signup(ctx *gin.Context) {
 
 	hashedPassword, err := util.HashedPassword(req.Password)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("wrong password")))
 	}
 
 	arg := db.CreateUserParams{
@@ -56,7 +56,7 @@ func (server *Server) signup(ctx *gin.Context) {
 		if pqErr, ok := err.(*pq.Error); ok {
 			switch pqErr.Code.Name() {
 			case "unique_violation":
-				ctx.JSON(http.StatusForbidden, errorResponse(err))
+				ctx.JSON(http.StatusForbidden, errorResponse(fmt.Errorf("email is already registered")))
 				return
 			}
 		}
@@ -72,7 +72,7 @@ func (server *Server) signup(ctx *gin.Context) {
 	response := &registerUserResponse{
 		User:        ReturnUserResponse(&user),
 		AccessToken: accessToken,
-		Message:     "registration successful",
+		Message:     "registration success",
 	}
 	ctx.JSON(http.StatusOK, response)
 }
@@ -106,7 +106,7 @@ func (server *Server) signin(ctx *gin.Context) {
 	user, err := server.store.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("user with email %s is not found", user.Email)))
 			return
 		}
 
@@ -121,7 +121,7 @@ func (server *Server) signin(ctx *gin.Context) {
 
 	err = util.CheckPassword(req.Password, user.Password.String)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("wrong password")))
 		return
 	}
 
@@ -134,7 +134,7 @@ func (server *Server) signin(ctx *gin.Context) {
 	loginUserData := &loginUserResponse{
 		AccessToken: accessToken,
 		User:        *ReturnUserResponse(&user),
-		Message:     "login successful",
+		Message:     "login success",
 	}
 
 	ctx.JSON(http.StatusOK, loginUserData)

@@ -16,6 +16,7 @@ import (
 
 type registerUserRequest struct {
 	Password string `json:"password" binding:"required,min=8,alphanum"`
+	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 }
 
@@ -48,6 +49,7 @@ func (server *Server) signup(ctx *gin.Context) {
 	arg := db.CreateUserParams{
 		Email:    req.Email,
 		Password: sql.NullString{String: hashedPassword, Valid: true},
+		Name:     sql.NullString{String: req.Name, Valid: true},
 		Provider: "credentials",
 	}
 

@@ -245,6 +245,9 @@ const docTemplate = `{
                 "passwordChangedAt": {
                     "type": "string"
                 },
+                "provider": {
+                    "type": "string"
+                },
                 "updatedAt": {
                     "type": "string"
                 }
@@ -317,10 +320,14 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
+                "name",
                 "password"
             ],
             "properties": {
                 "email": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 },
                 "password": {

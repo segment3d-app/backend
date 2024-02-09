@@ -14,6 +14,8 @@ definitions:
         type: string
       passwordChangedAt:
         type: string
+      provider:
+        type: string
       updatedAt:
         type: string
     type: object
@@ -62,11 +64,14 @@ definitions:
     properties:
       email:
         type: string
+      name:
+        type: string
       password:
         minLength: 8
         type: string
     required:
     - email
+    - name
     - password
     type: object
   api.registerUserResponse:

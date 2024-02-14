@@ -15,7 +15,7 @@ WORKDIR /app
 COPY --from=builder /app/main .
 COPY --from=builder /app/app.env .
 COPY --from=builder /app/Makefile .
-COPY --from=builder /app/db/migration .
+COPY --from=builder /app/db .
 
 CMD ["./main"]
 

@@ -14,6 +14,7 @@ RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/
 WORKDIR /app
 COPY --from=builder /app/main .
 COPY --from=builder /app/app.env .
+COPY --from=builder /app/Makefile .
 
 CMD ["./main"]
 

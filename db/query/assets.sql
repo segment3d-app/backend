@@ -39,4 +39,4 @@ SELECT a.*,
     u.email
 FROM "assets" AS a
     LEFT JOIN "users" AS u ON u.uid = a.uid
-ORDER BY a."createdAt";
+ORDER BY a."createdAt" DESC;

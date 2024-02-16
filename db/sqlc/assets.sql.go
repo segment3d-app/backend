@@ -80,7 +80,7 @@ SELECT a.id, a.uid, a.title, a.slug, a."assetUrl", a."assetType", a."thumbnailUr
     u.email
 FROM "assets" AS a
     LEFT JOIN "users" AS u ON u.uid = a.uid
-ORDER BY a."createdAt"
+ORDER BY a."createdAt" DESC
 `
 
 type GetAllAssetsRow struct {

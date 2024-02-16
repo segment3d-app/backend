@@ -66,7 +66,7 @@ func (server *Server) signup(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, err := server.tokenMaker.CreateToken(req.Email, server.config.AccessTokenDuration)
+	accessToken, err := server.tokenMaker.CreateToken(user.Uid, server.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -127,7 +127,7 @@ func (server *Server) signin(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, err := server.tokenMaker.CreateToken(req.Email, server.config.AccessTokenDuration)
+	accessToken, err := server.tokenMaker.CreateToken(user.Uid, server.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -227,7 +227,7 @@ func (server *Server) google(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, err := server.tokenMaker.CreateToken(userInfo.Email, server.config.AccessTokenDuration)
+	accessToken, err := server.tokenMaker.CreateToken(user.Uid, server.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

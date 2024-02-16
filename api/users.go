@@ -50,7 +50,7 @@ func (server *Server) getUserData(ctx *gin.Context) {
 		return
 	}
 
-	user, err := server.store.GetUserByEmail(ctx, payload.Email)
+	user, err := server.store.GetUserById(ctx, payload.Uid)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -97,7 +97,7 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := server.store.GetUserByEmail(ctx, payload.Email)
+	user, err := server.store.GetUserById(ctx, payload.Uid)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("user with email %s is not found", user.Email)))
@@ -163,7 +163,7 @@ func (server *Server) changeUserPassword(ctx *gin.Context) {
 		return
 	}
 
-	user, err := server.store.GetUserByEmail(ctx, payload.Email)
+	user, err := server.store.GetUserById(ctx, payload.Uid)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("user with email %s is not found", user.Email)))

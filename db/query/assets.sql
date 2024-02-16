@@ -17,3 +17,18 @@ SELECT slug
 FROM "assets"
 WHERE slug LIKE $1
 ORDER BY "createdAt" ASC;
+-- name: GetAssetsByUid :many
+SELECT *
+FROM "assets"
+WHERE uid = $1
+ORDER BY "CreatedAt" DESC;
+-- name: GetAssetsBySlug :one
+SELECT *
+FROM "assets"
+WHERE slug = $1
+LIMIT 1;
+-- name: GetAssetsBySlug :one
+SELECT *
+FROM "assets"
+WHERE slug = $1
+LIMIT 1;

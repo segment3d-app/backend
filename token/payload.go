@@ -2,9 +2,10 @@ package token
 
 import (
 	"errors"
+	"time"
+
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"time"
 )
 
 var (
@@ -13,14 +14,13 @@ var (
 )
 
 type Payload struct {
-	ID        uuid.UUID `json:"id"`
-	Email     string    `json:"email"`
+	Uid       uuid.UUID `json:"uuid"`
 	IssuedAt  time.Time `json:"issuedAt"`
 	ExpiredAt time.Time `json:"expiredAt"`
 }
 
 func (payload *Payload) GetAudience() (jwt.ClaimStrings, error) {
-	return jwt.ClaimStrings{payload.Email}, nil
+	return jwt.ClaimStrings{payload.Uid.String()}, nil
 }
 
 func (payload *Payload) GetExpirationTime() (*jwt.NumericDate, error) {
@@ -40,7 +40,7 @@ func (payload *Payload) GetNotBefore() (*jwt.NumericDate, error) {
 }
 
 func (payload *Payload) GetSubject() (string, error) {
-	return payload.Email, nil
+	return payload.Uid.String(), nil
 }
 
 func (payload *Payload) Valid() error {
@@ -51,15 +51,9 @@ func (payload *Payload) Valid() error {
 	return nil
 }
 
-func NewPayload(email string, duration time.Duration) (*Payload, error) {
-	tokenId, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
-
+func NewPayload(uid uuid.UUID, duration time.Duration) (*Payload, error) {
 	payload := &Payload{
-		ID:        tokenId,
-		Email:     email,
+		Uid:       uid,
 		IssuedAt:  time.Now(),
 		ExpiredAt: time.Now().Add(duration),
 	}

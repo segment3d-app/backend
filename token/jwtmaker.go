@@ -6,14 +6,15 @@ import (
 
 	"github.com/aead/chacha20poly1305"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type JWTMaker struct {
 	symmetricKey []byte
 }
 
-func (maker *JWTMaker) CreateToken(email string, duration time.Duration) (string, error) {
-	payload, err := NewPayload(email, duration)
+func (maker *JWTMaker) CreateToken(uid uuid.UUID, duration time.Duration) (string, error) {
+	payload, err := NewPayload(uid, duration)
 	if err != nil {
 		return "", err
 	}

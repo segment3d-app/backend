@@ -11,7 +11,9 @@ import (
 )
 
 type Querier interface {
+	CreateAsset(ctx context.Context, arg CreateAssetParams) (Assets, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (Users, error)
+	GetSlug(ctx context.Context, slug string) ([]string, error)
 	GetUserByEmail(ctx context.Context, email string) (Users, error)
 	GetUserById(ctx context.Context, uid uuid.UUID) (Users, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (Users, error)

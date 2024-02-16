@@ -1,5 +1,55 @@
 basePath: /api
 definitions:
+  api.AssetResponse:
+    properties:
+      assetType:
+        type: string
+      createdAt:
+        type: string
+      gaussianUrl:
+        type: string
+      id:
+        type: string
+      isPrivate:
+        type: boolean
+      likes:
+        type: integer
+      pointCloudUrl:
+        type: string
+      slug:
+        type: string
+      thumbnailUrl:
+        type: string
+      title:
+        type: string
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/api.UserResponse'
+    type: object
+  api.CreateAssetRequest:
+    properties:
+      assetType:
+        type: string
+      assetUrl:
+        type: string
+      isPrivate:
+        type: boolean
+      title:
+        type: string
+    required:
+    - assetType
+    - assetUrl
+    - isPrivate
+    - title
+    type: object
+  api.CreateAssetsResponse:
+    properties:
+      asset:
+        $ref: '#/definitions/api.AssetResponse'
+      message:
+        type: string
+    type: object
   api.UserResponse:
     properties:
       avatar:
@@ -104,6 +154,30 @@ info:
   title: Segment3d App API Documentation
   version: "1.0"
 paths:
+  /api/asset:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new asset based on the title, privacy setting, asset
+        URL, and asset type provided in the request.
+      parameters:
+      - description: Create Asset Request
+        in: body
+        name: CreateAssetRequest
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateAssetRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Asset creation successful, returns created asset details along
+            with a success message.
+          schema:
+            $ref: '#/definitions/api.CreateAssetsResponse'
+      summary: Create new asset
+      tags:
+      - asset
   /auth/google:
     post:
       consumes:

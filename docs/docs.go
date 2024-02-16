@@ -15,6 +15,40 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/asset": {
+            "post": {
+                "description": "Creates a new asset based on the title, privacy setting, asset URL, and asset type provided in the request.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "asset"
+                ],
+                "summary": "Create new asset",
+                "parameters": [
+                    {
+                        "description": "Create Asset Request",
+                        "name": "CreateAssetRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateAssetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Asset creation successful, returns created asset details along with a success message.",
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateAssetsResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/google": {
             "post": {
                 "description": "Authenticate user with Google OAuth token",
@@ -224,6 +258,81 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.AssetResponse": {
+            "type": "object",
+            "properties": {
+                "assetType": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "gaussianUrl": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isPrivate": {
+                    "type": "boolean"
+                },
+                "likes": {
+                    "type": "integer"
+                },
+                "pointCloudUrl": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "thumbnailUrl": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/api.UserResponse"
+                }
+            }
+        },
+        "api.CreateAssetRequest": {
+            "type": "object",
+            "required": [
+                "assetType",
+                "assetUrl",
+                "isPrivate",
+                "title"
+            ],
+            "properties": {
+                "assetType": {
+                    "type": "string"
+                },
+                "assetUrl": {
+                    "type": "string"
+                },
+                "isPrivate": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.CreateAssetsResponse": {
+            "type": "object",
+            "properties": {
+                "asset": {
+                    "$ref": "#/definitions/api.AssetResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "api.UserResponse": {
             "type": "object",
             "properties": {

@@ -57,6 +57,9 @@ func (server *Server) setupRouter() {
 	authenticatedRouter.PATCH("/api/user", server.updateUser)
 	authenticatedRouter.PATCH("/api/user/password", server.changeUserPassword)
 
+	// asset api
+	authenticatedRouter.POST("/api/asset", server.createAsset)
+
 	server.router = router
 }
 

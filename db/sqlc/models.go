@@ -16,7 +16,9 @@ type Assets struct {
 	Uid           uuid.NullUUID  `json:"uid"`
 	Title         string         `json:"title"`
 	Slug          string         `json:"slug"`
-	ThumbnailUrl  sql.NullString `json:"thumbnailUrl"`
+	AssetUrl      string         `json:"assetUrl"`
+	AssetType     string         `json:"assetType"`
+	ThumbnailUrl  string         `json:"thumbnailUrl"`
 	GaussianUrl   sql.NullString `json:"gaussianUrl"`
 	PointCloudUrl sql.NullString `json:"pointCloudUrl"`
 	IsPrivate     bool           `json:"isPrivate"`

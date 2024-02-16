@@ -38,4 +38,5 @@ SELECT a.*,
     u.avatar,
     u.email
 FROM "assets" AS a
-    LEFT JOIN "users" AS u ON u.uid = a.uid;
+    LEFT JOIN "users" AS u ON u.uid = a.uid
+ORDER BY a."createdAt";

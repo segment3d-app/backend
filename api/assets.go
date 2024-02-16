@@ -138,7 +138,6 @@ func (server *Server) createAsset(ctx *gin.Context) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(body, "ini body")
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -146,7 +145,6 @@ func (server *Server) createAsset(ctx *gin.Context) {
 	var response getThumbnailResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		fmt.Println("INI ERROR", body)
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}

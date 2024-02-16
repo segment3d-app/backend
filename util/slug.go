@@ -7,11 +7,8 @@ import (
 
 func GenerateBaseSlug(text string) string {
 	text = strings.ToLower(text)
-
-	reg, _ := regexp.Compile(`[^a-z0-9\\s]+`)
-	text = reg.ReplaceAllString(text, "")
-
 	text = strings.ReplaceAll(text, " ", "-")
-
+	reg, _ := regexp.Compile(`[^a-z0-9\-]+`)
+	text = reg.ReplaceAllString(text, "")
 	return text
 }

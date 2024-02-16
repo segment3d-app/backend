@@ -21,6 +21,7 @@ type AssetResponse struct {
 	Slug          string       `json:"slug"`
 	AssetType     string       `json:"assetType"`
 	ThumbnailUrl  string       `json:"thumbnailUrl"`
+	AssetUrl      string       `json:"assetUrl"`
 	PointCloudUrl string       `json:"pointCloudUrl"`
 	GaussianUrl   string       `json:"gaussianUrl"`
 	IsPrivate     bool         `json:"isPrivate"`
@@ -37,6 +38,7 @@ func returnAssetResponse(asset *db.Assets, user *db.Users) AssetResponse {
 		Slug:          asset.Slug,
 		AssetType:     asset.AssetType,
 		ThumbnailUrl:  asset.ThumbnailUrl,
+		AssetUrl:      asset.AssetUrl,
 		PointCloudUrl: asset.PointCloudUrl.String,
 		GaussianUrl:   asset.GaussianUrl.String,
 		IsPrivate:     asset.IsPrivate,
@@ -150,10 +152,10 @@ func (server *Server) createAsset(ctx *gin.Context) {
 	arg := db.CreateAssetParams{
 		Uid:          uuid.NullUUID{UUID: user.Uid, Valid: true},
 		Title:        req.Title,
-		Slug:         response.Url,
+		Slug:         slug,
 		AssetUrl:     req.AssetUrl,
 		AssetType:    req.AssetType,
-		ThumbnailUrl: slug,
+		ThumbnailUrl: response.Url,
 		IsPrivate:    false,
 		Likes:        0,
 	}

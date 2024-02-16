@@ -30,6 +30,7 @@ CREATE TABLE "assets" (
     "gaussianUrl" VARCHAR(255),
     "pointCloudUrl" VARCHAR(255),
     "isPrivate" BOOLEAN DEFAULT FALSE NOT NULL,
+    "status" VARCHAR(255) NOT NULL, -- created, generating splat, completed, failed
     "likes" INT NOT NULL,
     "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()

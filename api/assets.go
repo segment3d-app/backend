@@ -20,6 +20,7 @@ type AssetResponse struct {
 	Title         string       `json:"title"`
 	Slug          string       `json:"slug"`
 	AssetType     string       `json:"assetType"`
+	Status        string       `json:"status"`
 	ThumbnailUrl  string       `json:"thumbnailUrl"`
 	AssetUrl      string       `json:"assetUrl"`
 	PointCloudUrl string       `json:"pointCloudUrl"`
@@ -37,6 +38,7 @@ func returnAssetResponse(asset *db.Assets, user *db.Users) AssetResponse {
 		Title:         asset.Title,
 		Slug:          asset.Slug,
 		AssetType:     asset.AssetType,
+		Status:        asset.Status,
 		ThumbnailUrl:  asset.ThumbnailUrl,
 		AssetUrl:      asset.AssetUrl,
 		PointCloudUrl: asset.PointCloudUrl.String,
@@ -153,6 +155,7 @@ func (server *Server) createAsset(ctx *gin.Context) {
 		Uid:          uuid.NullUUID{UUID: user.Uid, Valid: true},
 		Title:        req.Title,
 		Slug:         slug,
+		Status:       "created",
 		AssetUrl:     req.AssetUrl,
 		AssetType:    req.AssetType,
 		ThumbnailUrl: response.Url,

@@ -22,6 +22,7 @@ type Assets struct {
 	GaussianUrl   sql.NullString `json:"gaussianUrl"`
 	PointCloudUrl sql.NullString `json:"pointCloudUrl"`
 	IsPrivate     bool           `json:"isPrivate"`
+	Status        string         `json:"status"`
 	Likes         int32          `json:"likes"`
 	CreatedAt     time.Time      `json:"createdAt"`
 	UpdatedAt     time.Time      `json:"updatedAt"`

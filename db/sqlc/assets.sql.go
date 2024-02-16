@@ -16,20 +16,22 @@ INSERT INTO "assets" (
         uid,
         title,
         slug,
+        status,
         "assetUrl",
         "assetType",
         "thumbnailUrl",
         "isPrivate",
         likes
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussianUrl", "pointCloudUrl", "isPrivate", likes, "createdAt", "updatedAt"
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussianUrl", "pointCloudUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
 `
 
 type CreateAssetParams struct {
 	Uid          uuid.NullUUID `json:"uid"`
 	Title        string        `json:"title"`
 	Slug         string        `json:"slug"`
+	Status       string        `json:"status"`
 	AssetUrl     string        `json:"assetUrl"`
 	AssetType    string        `json:"assetType"`
 	ThumbnailUrl string        `json:"thumbnailUrl"`
@@ -42,6 +44,7 @@ func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset
 		arg.Uid,
 		arg.Title,
 		arg.Slug,
+		arg.Status,
 		arg.AssetUrl,
 		arg.AssetType,
 		arg.ThumbnailUrl,
@@ -60,6 +63,7 @@ func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset
 		&i.GaussianUrl,
 		&i.PointCloudUrl,
 		&i.IsPrivate,
+		&i.Status,
 		&i.Likes,
 		&i.CreatedAt,
 		&i.UpdatedAt,

@@ -21,14 +21,21 @@ ORDER BY "createdAt" ASC;
 SELECT *
 FROM "assets"
 WHERE uid = $1
-ORDER BY "CreatedAt" DESC;
+ORDER BY "createdAt" DESC;
 -- name: GetAssetsBySlug :one
 SELECT *
 FROM "assets"
 WHERE slug = $1
 LIMIT 1;
--- name: GetAssetsBySlug :one
+-- name: GetAssetsById :one
 SELECT *
 FROM "assets"
-WHERE slug = $1
+WHERE id = $1
 LIMIT 1;
+-- name: GetAllAssets :many
+SELECT a.*,
+    u.name,
+    u.avatar,
+    u.email
+FROM "assets" AS a
+    LEFT JOIN "users" AS u ON u.uid = a.uid;

@@ -13,6 +13,10 @@ import (
 type Querier interface {
 	CreateAsset(ctx context.Context, arg CreateAssetParams) (Assets, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (Users, error)
+	GetAllAssets(ctx context.Context) ([]GetAllAssetsRow, error)
+	GetAssetsById(ctx context.Context, id uuid.UUID) (Assets, error)
+	GetAssetsBySlug(ctx context.Context, slug string) (Assets, error)
+	GetAssetsByUid(ctx context.Context, uid uuid.NullUUID) ([]Assets, error)
 	GetSlug(ctx context.Context, slug string) ([]string, error)
 	GetUserByEmail(ctx context.Context, email string) (Users, error)
 	GetUserById(ctx context.Context, uid uuid.UUID) (Users, error)

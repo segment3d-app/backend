@@ -74,12 +74,12 @@ type getThumbnailResponse struct {
 //
 //	It also attempts to retrieve a thumbnail for the asset from the specified asset URL.
 //
-// @Tags asset
+// @Tags assets
 // @Accept json
 // @Produce json
 // @Param CreateAssetRequest body CreateAssetRequest true "Create Asset Request"
 // @Success 202 {object} CreateAssetsResponse "Asset creation successful, returns created asset details along with a success message."
-// @Router /api/asset [post]
+// @Router /assets [post]
 func (server *Server) createAsset(ctx *gin.Context) {
 	payload, err := getUserPayload(ctx)
 	if err != nil {
@@ -179,4 +179,59 @@ func (server *Server) createAsset(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusAccepted, res)
+}
+
+type getAllAssetsResponse struct {
+	Message string          `json:"message"`
+	Assets  []AssetResponse `json:"assets"`
+}
+
+// GetAllAssets godoc
+// @Summary Get all assets
+// @Description Retrieves a list of all assets, including their associated user details.
+// @Tags assets
+// @Accept json
+// @Produce json
+// @Success 200 {object} getAllAssetsResponse "Success: Returns all assets."
+// @Failure 500 {object} ErrorResponse "Error: Internal Server Error"
+// @Router /assets [get]
+func (server *Server) getAllAssets(ctx *gin.Context) {
+	assets, err := server.store.GetAllAssets(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	var formattedAssets []AssetResponse
+
+	for _, asset := range assets {
+		var formattedAsset AssetResponse
+		fAsset := db.Assets{
+			ID:            asset.ID,
+			Title:         asset.Title,
+			Slug:          asset.Slug,
+			AssetType:     asset.AssetType,
+			Status:        asset.Status,
+			ThumbnailUrl:  asset.ThumbnailUrl,
+			AssetUrl:      asset.AssetUrl,
+			PointCloudUrl: asset.PointCloudUrl,
+			GaussianUrl:   asset.GaussianUrl,
+			IsPrivate:     asset.IsPrivate,
+			Likes:         asset.Likes,
+			CreatedAt:     asset.CreatedAt,
+			UpdatedAt:     asset.UpdatedAt,
+			Uid:           asset.Uid,
+		}
+		fUser := db.Users{
+			Uid:    asset.Uid.UUID,
+			Email:  asset.Email.String,
+			Avatar: asset.Avatar,
+			Name:   asset.Name,
+		}
+		formattedAsset = returnAssetResponse(&fAsset, &fUser)
+
+		formattedAssets = append(formattedAssets, formattedAsset)
+	}
+
+	ctx.JSON(http.StatusOK, getAllAssetsResponse{Message: "all assets returned", Assets: formattedAssets})
 }

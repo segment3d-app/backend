@@ -4,6 +4,8 @@ definitions:
     properties:
       assetType:
         type: string
+      assetUrl:
+        type: string
       createdAt:
         type: string
       gaussianUrl:
@@ -18,6 +20,8 @@ definitions:
         type: string
       slug:
         type: string
+      status:
+        type: string
       thumbnailUrl:
         type: string
       title:
@@ -30,6 +34,9 @@ definitions:
   api.CreateAssetRequest:
     properties:
       assetType:
+        enum:
+        - images
+        - video
         type: string
       assetUrl:
         type: string
@@ -48,6 +55,11 @@ definitions:
       asset:
         $ref: '#/definitions/api.AssetResponse'
       message:
+        type: string
+    type: object
+  api.ErrorResponse:
+    properties:
+      error:
         type: string
     type: object
   api.UserResponse:
@@ -82,6 +94,15 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/api.UserResponse'
+    type: object
+  api.getAllAssetsResponse:
+    properties:
+      assets:
+        items:
+          $ref: '#/definitions/api.AssetResponse'
+        type: array
+      message:
+        type: string
     type: object
   api.googleRequest:
     properties:
@@ -154,7 +175,26 @@ info:
   title: Segment3d App API Documentation
   version: "1.0"
 paths:
-  /api/asset:
+  /assets:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of all assets, including their associated user
+        details.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Success: Returns all assets.'
+          schema:
+            $ref: '#/definitions/api.getAllAssetsResponse'
+        "500":
+          description: 'Error: Internal Server Error'
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Get all assets
+      tags:
+      - assets
     post:
       consumes:
       - application/json
@@ -177,7 +217,7 @@ paths:
             $ref: '#/definitions/api.CreateAssetsResponse'
       summary: Create new asset
       tags:
-      - asset
+      - assets
   /auth/google:
     post:
       consumes:
@@ -245,7 +285,7 @@ paths:
       summary: Register a new user
       tags:
       - auth
-  /user:
+  /users:
     get:
       consumes:
       - application/json
@@ -261,7 +301,7 @@ paths:
       - BearerAuth: []
       summary: Get user data
       tags:
-      - user
+      - users
     patch:
       consumes:
       - application/json
@@ -284,8 +324,8 @@ paths:
       - BearerAuth: []
       summary: Update user information
       tags:
-      - user
-  /user/password:
+      - users
+  /users/password:
     patch:
       consumes:
       - application/json
@@ -308,7 +348,7 @@ paths:
       - BearerAuth: []
       summary: Change user password
       tags:
-      - user
+      - users
 securityDefinitions:
   BearerAuth:
     in: header

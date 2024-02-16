@@ -37,12 +37,12 @@ func ReturnUserResponse(user *db.Users) *UserResponse {
 
 // @Summary Get user data
 // @Description Retrieve user information
-// @Tags user
+// @Tags users
 // @Accept json
 // @Produce json
 // @Success 200 {object} UserResponse "User information retrieved successfully"
 // @Security BearerAuth
-// @Router /user [get]
+// @Router /users [get]
 func (server *Server) getUserData(ctx *gin.Context) {
 	payload, err := getUserPayload(ctx)
 	if err != nil {
@@ -77,13 +77,13 @@ type updateUserResponse struct {
 
 // @Summary Update user information
 // @Description Update user information based on the provided user ID
-// @Tags user
+// @Tags users
 // @Accept json
 // @Produce json
 // @Param request body updateUserRequest true "User update details"
 // @Success 200 {object} updateUserResponse "User information updated successfully"
 // @Security BearerAuth
-// @Router /user [patch]
+// @Router /users [patch]
 func (server *Server) updateUser(ctx *gin.Context) {
 	payload, err := getUserPayload(ctx)
 	if err != nil {
@@ -143,13 +143,13 @@ type changeUserPasswordResponse struct {
 
 // @Summary Change user password
 // @Description Change user password based on the provided user ID
-// @Tags user
+// @Tags users
 // @Accept json
 // @Produce json
 // @Param request body changeUserPasswordRequest true "User password update details"
 // @Success 200 {object} changeUserPasswordResponse "User password updated successfully"
 // @Security BearerAuth
-// @Router /user/password [patch]
+// @Router /users/password [patch]
 func (server *Server) changeUserPassword(ctx *gin.Context) {
 	payload, err := getUserPayload(ctx)
 	if err != nil {

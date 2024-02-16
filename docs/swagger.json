@@ -9,7 +9,34 @@
     "host": "localhost:8080",
     "basePath": "/api",
     "paths": {
-        "/api/asset": {
+        "/assets": {
+            "get": {
+                "description": "Retrieves a list of all assets, including their associated user details.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assets"
+                ],
+                "summary": "Get all assets",
+                "responses": {
+                    "200": {
+                        "description": "Success: Returns all assets.",
+                        "schema": {
+                            "$ref": "#/definitions/api.getAllAssetsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error: Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Creates a new asset based on the title, privacy setting, asset URL, and asset type provided in the request.",
                 "consumes": [
@@ -19,7 +46,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "asset"
+                    "assets"
                 ],
                 "summary": "Create new asset",
                 "parameters": [
@@ -146,7 +173,7 @@
                 }
             }
         },
-        "/user": {
+        "/users": {
             "get": {
                 "security": [
                     {
@@ -161,7 +188,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Get user data",
                 "responses": {
@@ -187,7 +214,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Update user information",
                 "parameters": [
@@ -211,7 +238,7 @@
                 }
             }
         },
-        "/user/password": {
+        "/users/password": {
             "patch": {
                 "security": [
                     {
@@ -226,7 +253,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Change user password",
                 "parameters": [
@@ -258,6 +285,9 @@
                 "assetType": {
                     "type": "string"
                 },
+                "assetUrl": {
+                    "type": "string"
+                },
                 "createdAt": {
                     "type": "string"
                 },
@@ -277,6 +307,9 @@
                     "type": "string"
                 },
                 "slug": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 },
                 "thumbnailUrl": {
@@ -303,7 +336,11 @@
             ],
             "properties": {
                 "assetType": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "images",
+                        "video"
+                    ]
                 },
                 "assetUrl": {
                     "type": "string"
@@ -323,6 +360,14 @@
                     "$ref": "#/definitions/api.AssetResponse"
                 },
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
                     "type": "string"
                 }
             }
@@ -375,6 +420,20 @@
                 },
                 "user": {
                     "$ref": "#/definitions/api.UserResponse"
+                }
+            }
+        },
+        "api.getAllAssetsResponse": {
+            "type": "object",
+            "properties": {
+                "assets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.AssetResponse"
+                    }
+                },
+                "message": {
+                    "type": "string"
                 }
             }
         },

@@ -53,12 +53,13 @@ func (server *Server) setupRouter() {
 	router.POST("/api/auth/google", server.google)
 
 	// user api
-	authenticatedRouter.GET("/api/user", server.getUserData)
-	authenticatedRouter.PATCH("/api/user", server.updateUser)
-	authenticatedRouter.PATCH("/api/user/password", server.changeUserPassword)
+	authenticatedRouter.GET("/api/users", server.getUserData)
+	authenticatedRouter.PATCH("/api/users", server.updateUser)
+	authenticatedRouter.PATCH("/api/users/password", server.changeUserPassword)
 
 	// asset api
-	authenticatedRouter.POST("/api/asset", server.createAsset)
+	authenticatedRouter.POST("/api/assets", server.createAsset)
+	router.GET("/api/assets", server.getAllAssets)
 
 	server.router = router
 }

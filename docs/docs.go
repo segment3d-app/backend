@@ -15,7 +15,34 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/asset": {
+        "/assets": {
+            "get": {
+                "description": "Retrieves a list of all assets, including their associated user details.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assets"
+                ],
+                "summary": "Get all assets",
+                "responses": {
+                    "200": {
+                        "description": "Success: Returns all assets.",
+                        "schema": {
+                            "$ref": "#/definitions/api.getAllAssetsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error: Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Creates a new asset based on the title, privacy setting, asset URL, and asset type provided in the request.",
                 "consumes": [
@@ -25,7 +52,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "asset"
+                    "assets"
                 ],
                 "summary": "Create new asset",
                 "parameters": [
@@ -152,7 +179,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/user": {
+        "/users": {
             "get": {
                 "security": [
                     {
@@ -167,7 +194,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Get user data",
                 "responses": {
@@ -193,7 +220,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Update user information",
                 "parameters": [
@@ -217,7 +244,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/user/password": {
+        "/users/password": {
             "patch": {
                 "security": [
                     {
@@ -232,7 +259,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Change user password",
                 "parameters": [
@@ -264,6 +291,9 @@ const docTemplate = `{
                 "assetType": {
                     "type": "string"
                 },
+                "assetUrl": {
+                    "type": "string"
+                },
                 "createdAt": {
                     "type": "string"
                 },
@@ -283,6 +313,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "slug": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 },
                 "thumbnailUrl": {
@@ -309,7 +342,11 @@ const docTemplate = `{
             ],
             "properties": {
                 "assetType": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "images",
+                        "video"
+                    ]
                 },
                 "assetUrl": {
                     "type": "string"
@@ -329,6 +366,14 @@ const docTemplate = `{
                     "$ref": "#/definitions/api.AssetResponse"
                 },
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
                     "type": "string"
                 }
             }
@@ -381,6 +426,20 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/api.UserResponse"
+                }
+            }
+        },
+        "api.getAllAssetsResponse": {
+            "type": "object",
+            "properties": {
+                "assets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.AssetResponse"
+                    }
+                },
+                "message": {
+                    "type": "string"
                 }
             }
         },

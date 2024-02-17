@@ -65,6 +65,7 @@ func (server *Server) setupRouter() {
 
 	// asset api
 	authenticatedRouter.POST("/api/assets", server.createAsset)
+	authenticatedRouter.GET("/api/assets/me", server.getMyAssets)
 	router.GET("/api/assets", server.getAllAssets)
 
 	server.router = router

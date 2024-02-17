@@ -17,6 +17,7 @@ type Querier interface {
 	GetAssetsById(ctx context.Context, id uuid.UUID) (Assets, error)
 	GetAssetsBySlug(ctx context.Context, slug string) (Assets, error)
 	GetAssetsByUid(ctx context.Context, uid uuid.NullUUID) ([]Assets, error)
+	GetMyAssets(ctx context.Context, uid uuid.NullUUID) ([]Assets, error)
 	GetSlug(ctx context.Context, slug string) ([]string, error)
 	GetUserByEmail(ctx context.Context, email string) (Users, error)
 	GetUserById(ctx context.Context, uid uuid.UUID) (Users, error)

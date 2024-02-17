@@ -227,3 +227,64 @@ func (server *Server) getAllAssets(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, getAllAssetsResponse{Message: "all assets returned", Assets: formattedAssets})
 }
+
+type getMyAssetsResponse struct {
+	Message string          `json:"message"`
+	Assets  []AssetResponse `json:"assets"`
+}
+
+// GetMyAssets
+// @Summary Get my assets
+// @Description Retrieves a list of my assets
+// @Tags assets
+// @Accept json
+// @Produce json
+// @Success 200 {object} getMyAssetsResponse "Success: Returns all assets."
+// @Failure 500 {object} ErrorResponse "Error: Internal Server Error"
+// @Router /assets/me [get]
+func (server *Server) getMyAssets(ctx *gin.Context) {
+	payload, err := getUserPayload(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserById(ctx, payload.Uid)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	assets, err := server.store.GetMyAssets(ctx, uuid.NullUUID{UUID: user.Uid, Valid: true})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	var formattedAssets []AssetResponse
+
+	for _, asset := range assets {
+		var formattedAsset AssetResponse
+		fAsset := db.Assets{
+			ID:            asset.ID,
+			Title:         asset.Title,
+			Slug:          asset.Slug,
+			AssetType:     asset.AssetType,
+			Status:        asset.Status,
+			ThumbnailUrl:  asset.ThumbnailUrl,
+			AssetUrl:      asset.AssetUrl,
+			PointCloudUrl: asset.PointCloudUrl,
+			GaussianUrl:   asset.GaussianUrl,
+			IsPrivate:     asset.IsPrivate,
+			Likes:         asset.Likes,
+			CreatedAt:     asset.CreatedAt,
+			UpdatedAt:     asset.UpdatedAt,
+			Uid:           asset.Uid,
+		}
+		formattedAsset = returnAssetResponse(&fAsset, &user)
+
+		formattedAssets = append(formattedAssets, formattedAsset)
+	}
+
+	ctx.JSON(http.StatusOK, getMyAssetsResponse{Message: "all assets returned", Assets: formattedAssets})
+}

@@ -247,6 +247,51 @@ func (q *Queries) GetAssetsByUid(ctx context.Context, uid uuid.NullUUID) ([]Asse
 	return items, nil
 }
 
+const getMyAssets = `-- name: GetMyAssets :many
+SELECT id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussianUrl", "pointCloudUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
+FROM "assets"
+WHERE uid = $1
+ORDER BY "createdAt" DESC
+`
+
+func (q *Queries) GetMyAssets(ctx context.Context, uid uuid.NullUUID) ([]Assets, error) {
+	rows, err := q.db.QueryContext(ctx, getMyAssets, uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Assets{}
+	for rows.Next() {
+		var i Assets
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uid,
+			&i.Title,
+			&i.Slug,
+			&i.AssetUrl,
+			&i.AssetType,
+			&i.ThumbnailUrl,
+			&i.GaussianUrl,
+			&i.PointCloudUrl,
+			&i.IsPrivate,
+			&i.Status,
+			&i.Likes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSlug = `-- name: GetSlug :many
 SELECT slug
 FROM "assets"

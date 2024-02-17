@@ -40,3 +40,8 @@ SELECT a.*,
 FROM "assets" AS a
     LEFT JOIN "users" AS u ON u.uid = a.uid
 ORDER BY a."createdAt" DESC;
+-- name: GetMyAssets :many
+SELECT *
+FROM "assets"
+WHERE uid = $1
+ORDER BY "createdAt" DESC;

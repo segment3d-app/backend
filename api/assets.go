@@ -53,7 +53,7 @@ func returnAssetResponse(asset *db.Assets, user *db.Users) AssetResponse {
 type CreateAssetRequest struct {
 	Title     string `json:"title" binding:"required"`
 	IsPrivate *bool  `json:"isPrivate" binding:"required"`
-	AssetUrl  string `json:"assetUrl" binding:"required,url"`
+	AssetUrl  string `json:"assetUrl" binding:"required"`
 	AssetType string `json:"assetType" binding:"required,oneof=images video"`
 }
 

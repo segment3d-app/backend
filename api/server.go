@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	db "github.com/segment3d-app/segment3d-be/db/sqlc"
@@ -46,6 +47,11 @@ func (server *Server) setupRouter() {
 	// configure swagger docs
 	docs.SwaggerInfo.BasePath = "/api"
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+
+	// health check api
+	router.GET("/api/health", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{"message": "server is running"})
+	})
 
 	// auth api
 	router.POST("/api/auth/signin", server.signin)

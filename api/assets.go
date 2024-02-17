@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -116,13 +115,8 @@ func (server *Server) createAsset(ctx *gin.Context) {
 	}
 
 	urlLink := strings.Replace(req.AssetUrl, "files", "thumbnail", -1)
-	parsedURL, err := url.Parse(urlLink)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
 
-	resp, err := http.Get(fmt.Sprintf("%s%s", server.config.StorageUrl, parsedURL.Path))
+	resp, err := http.Get(fmt.Sprintf("%s%s", server.config.StorageUrl, urlLink))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

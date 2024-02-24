@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -173,7 +174,7 @@ func (server *Server) createAsset(ctx *gin.Context) {
 		return
 	}
 
-	err = publishGenerateSplatEvent(ctx, server.channel, &asset, &user)
+	err = publishGenerateSplatEvent(server.channel, &asset, &user)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -187,33 +188,32 @@ func (server *Server) createAsset(ctx *gin.Context) {
 	ctx.JSON(http.StatusAccepted, res)
 }
 
-func publishGenerateSplatEvent(ctx *gin.Context, channel *amqp091.Channel, asset *db.Assets, user *db.Users) (error) {
-	msg := GenerateSplatEvent{
-		Url:  asset.AssetUrl,
-		Type: asset.AssetType,
-	}
-
-	stringMsg, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-
-	publishMsg := amqp091.Publishing{
-		ContentType:  "text/json",
-		DeliveryMode: 1,
-		MessageId:    uuid.NewString(),
-		Timestamp:    time.Now(),
-		UserId:       user.Uid.String(),
-		AppId:        "be",
-		Body:         stringMsg,
-	}
-
+func publishGenerateSplatEvent(channel *amqp091.Channel, asset *db.Assets, user *db.Users) error {
+	// create channel
 	q, err := channel.QueueDeclare("generate_splat", true, false, false, false, nil)
 	if err != nil {
 		return err
 	}
 
-	err = channel.PublishWithContext(ctx, "", q.Name, false, false, publishMsg)
+	// create context
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// generate message
+	msg, err := json.Marshal(GenerateSplatEvent{
+		Url:  asset.AssetUrl,
+		Type: asset.AssetType,
+	})
+	if err != nil {
+		return err
+	}
+	publishedMsg := amqp091.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: 2,
+		Body:         msg,
+	}
+
+	err = channel.PublishWithContext(ctx, "", q.Name, false, false, publishedMsg)
 	if err != nil {
 		return err
 	}

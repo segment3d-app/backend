@@ -104,6 +104,15 @@ definitions:
       message:
         type: string
     type: object
+  api.getMyAssetsResponse:
+    properties:
+      assets:
+        items:
+          $ref: '#/definitions/api.AssetResponse'
+        type: array
+      message:
+        type: string
+    type: object
   api.googleRequest:
     properties:
       token:
@@ -153,6 +162,13 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/api.UserResponse'
+    type: object
+  api.removeAssetResponse:
+    properties:
+      asset:
+        $ref: '#/definitions/api.AssetResponse'
+      message:
+        type: string
     type: object
   api.updateUserRequest:
     properties:
@@ -215,7 +231,53 @@ paths:
             with a success message.
           schema:
             $ref: '#/definitions/api.CreateAssetsResponse'
+      security:
+      - BearerAuth: []
       summary: Create new asset
+      tags:
+      - assets
+  /assets/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove my asset
+      parameters:
+      - description: Asset ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Asset removed successfully
+          schema:
+            $ref: '#/definitions/api.removeAssetResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove my asset
+      tags:
+      - assets
+  /assets/me:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of my assets
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Success: Returns all assets.'
+          schema:
+            $ref: '#/definitions/api.getMyAssetsResponse'
+        "500":
+          description: 'Error: Internal Server Error'
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my assets
       tags:
       - assets
   /auth/google:

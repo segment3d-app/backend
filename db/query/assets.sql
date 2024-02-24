@@ -45,3 +45,7 @@ SELECT *
 FROM "assets"
 WHERE uid = $1
 ORDER BY "createdAt" DESC;
+-- name: RemoveAsset :one
+DELETE FROM "assets"
+WHERE uid = $1 AND id = $2
+RETURNING *;

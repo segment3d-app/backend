@@ -38,6 +38,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Creates a new asset based on the title, privacy setting, asset URL, and asset type provided in the request.",
                 "consumes": [
                     "application/json"
@@ -65,6 +70,77 @@
                         "description": "Asset creation successful, returns created asset details along with a success message.",
                         "schema": {
                             "$ref": "#/definitions/api.CreateAssetsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/assets/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves a list of my assets",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assets"
+                ],
+                "summary": "Get my assets",
+                "responses": {
+                    "200": {
+                        "description": "Success: Returns all assets.",
+                        "schema": {
+                            "$ref": "#/definitions/api.getMyAssetsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error: Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/assets/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove my asset",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assets"
+                ],
+                "summary": "Remove my asset",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Asset removed successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.removeAssetResponse"
                         }
                     }
                 }
@@ -437,6 +513,20 @@
                 }
             }
         },
+        "api.getMyAssetsResponse": {
+            "type": "object",
+            "properties": {
+                "assets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.AssetResponse"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "api.googleRequest": {
             "type": "object",
             "required": [
@@ -509,6 +599,17 @@
                 },
                 "user": {
                     "$ref": "#/definitions/api.UserResponse"
+                }
+            }
+        },
+        "api.removeAssetResponse": {
+            "type": "object",
+            "properties": {
+                "asset": {
+                    "$ref": "#/definitions/api.AssetResponse"
+                },
+                "message": {
+                    "type": "string"
                 }
             }
         },

@@ -21,6 +21,7 @@ type Querier interface {
 	GetSlug(ctx context.Context, slug string) ([]string, error)
 	GetUserByEmail(ctx context.Context, email string) (Users, error)
 	GetUserById(ctx context.Context, uid uuid.UUID) (Users, error)
+	RemoveAsset(ctx context.Context, arg RemoveAssetParams) (Assets, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (Users, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (Users, error)
 }

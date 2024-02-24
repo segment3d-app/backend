@@ -13,6 +13,7 @@ type Config struct {
 	StorageUrl          string        `mapstructure:"STORAGE_SERVER_URL"`
 	TokenSymmetricKey   string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
+	RabbitSource        string        `mapstructure:"RABBIT_SOURCE"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

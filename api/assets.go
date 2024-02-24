@@ -78,6 +78,7 @@ type getThumbnailResponse struct {
 // @Produce json
 // @Param CreateAssetRequest body CreateAssetRequest true "Create Asset Request"
 // @Success 202 {object} CreateAssetsResponse "Asset creation successful, returns created asset details along with a success message."
+// @Security BearerAuth
 // @Router /assets [post]
 func (server *Server) createAsset(ctx *gin.Context) {
 	payload, err := getUserPayload(ctx)
@@ -241,6 +242,7 @@ type getMyAssetsResponse struct {
 // @Produce json
 // @Success 200 {object} getMyAssetsResponse "Success: Returns all assets."
 // @Failure 500 {object} ErrorResponse "Error: Internal Server Error"
+// @Security BearerAuth
 // @Router /assets/me [get]
 func (server *Server) getMyAssets(ctx *gin.Context) {
 	payload, err := getUserPayload(ctx)
@@ -287,4 +289,56 @@ func (server *Server) getMyAssets(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, getMyAssetsResponse{Message: "all assets returned", Assets: formattedAssets})
+}
+
+type removeAssetRequest struct {
+	ID string `uri:"id"`
+}
+
+type removeAssetResponse struct {
+	Message string        `json:"message"`
+	Asset   AssetResponse `json:"asset"`
+}
+
+// RemoveAsset
+// @Summary Remove my asset
+// @Description Remove my asset
+// @Tags assets
+// @Accept json
+// @Produce json
+// @Param   id   path   string     true  "Asset ID"
+// @Success 200 {object} removeAssetResponse "Asset removed successfully"
+// @Security BearerAuth
+// @Router /assets/{id} [delete]
+func (server *Server) removeAsset(ctx *gin.Context) {
+	payload, err := getUserPayload(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	var req removeAssetRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.RemoveAssetParams{
+		Uid: uuid.NullUUID{UUID: payload.Uid, Valid: true},
+		ID:  uuid.MustParse(req.ID),
+	}
+
+	asset, err := server.store.RemoveAsset(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserById(ctx, payload.Uid)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusAccepted, removeAssetResponse{Message: "Asset removed successfully", Asset: returnAssetResponse(&asset, &user)})
 }

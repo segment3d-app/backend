@@ -321,3 +321,36 @@ func (q *Queries) GetSlug(ctx context.Context, slug string) ([]string, error) {
 	}
 	return items, nil
 }
+
+const removeAsset = `-- name: RemoveAsset :one
+DELETE FROM "assets"
+WHERE uid = $1 AND id = $2
+RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussianUrl", "pointCloudUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
+`
+
+type RemoveAssetParams struct {
+	Uid uuid.NullUUID `json:"uid"`
+	ID  uuid.UUID     `json:"id"`
+}
+
+func (q *Queries) RemoveAsset(ctx context.Context, arg RemoveAssetParams) (Assets, error) {
+	row := q.db.QueryRowContext(ctx, removeAsset, arg.Uid, arg.ID)
+	var i Assets
+	err := row.Scan(
+		&i.ID,
+		&i.Uid,
+		&i.Title,
+		&i.Slug,
+		&i.AssetUrl,
+		&i.AssetType,
+		&i.ThumbnailUrl,
+		&i.GaussianUrl,
+		&i.PointCloudUrl,
+		&i.IsPrivate,
+		&i.Status,
+		&i.Likes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

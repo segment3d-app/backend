@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rabbitmq/amqp091-go"
 	db "github.com/segment3d-app/segment3d-be/db/sqlc"
 	"github.com/segment3d-app/segment3d-be/docs"
 	"github.com/segment3d-app/segment3d-be/token"
@@ -18,19 +19,20 @@ type Server struct {
 	store      db.Store
 	router     *gin.Engine
 	tokenMaker token.Maker
+	channel    *amqp091.Channel
 }
 
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-func NewServer(config *util.Config, store db.Store) (*Server, error) {
+func NewServer(config *util.Config, store db.Store, ch *amqp091.Channel) (*Server, error) {
 	tokenMaker, err := token.NewJWTMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, err
 	}
 
-	server := &Server{config: *config, store: store, tokenMaker: tokenMaker}
+	server := &Server{config: *config, store: store, tokenMaker: tokenMaker, channel: ch}
 	server.setupRouter()
 
 	return server, nil

@@ -7,9 +7,11 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/rabbitmq/amqp091-go"
 	db "github.com/segment3d-app/segment3d-be/db/sqlc"
 	"github.com/segment3d-app/segment3d-be/util"
 )
@@ -65,6 +67,11 @@ type CreateAssetsResponse struct {
 type getThumbnailResponse struct {
 	Message string `json:"message"`
 	Url     string `json:"url"`
+}
+
+type GenerateSplatEvent struct {
+	Url  string `json:"url"`
+	Type string `json:"type"`
 }
 
 // createAsset creates a new asset with provided details
@@ -166,12 +173,52 @@ func (server *Server) createAsset(ctx *gin.Context) {
 		return
 	}
 
+	err = publishGenerateSplatEvent(ctx, server.channel, &asset, &user)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	res := CreateAssetsResponse{
 		Message: "generate splat from model",
 		Asset:   returnAssetResponse(&asset, &user),
 	}
 
 	ctx.JSON(http.StatusAccepted, res)
+}
+
+func publishGenerateSplatEvent(ctx *gin.Context, channel *amqp091.Channel, asset *db.Assets, user *db.Users) (error) {
+	msg := GenerateSplatEvent{
+		Url:  asset.AssetUrl,
+		Type: asset.AssetType,
+	}
+
+	stringMsg, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	publishMsg := amqp091.Publishing{
+		ContentType:  "text/json",
+		DeliveryMode: 1,
+		MessageId:    uuid.NewString(),
+		Timestamp:    time.Now(),
+		UserId:       user.Uid.String(),
+		AppId:        "be",
+		Body:         stringMsg,
+	}
+
+	q, err := channel.QueueDeclare("generate_splat", true, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+
+	err = channel.PublishWithContext(ctx, "", q.Name, false, false, publishMsg)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type getAllAssetsResponse struct {

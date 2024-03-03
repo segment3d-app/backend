@@ -70,9 +70,10 @@ type getThumbnailResponse struct {
 	Url     string `json:"url"`
 }
 
-type GenerateSplatEvent struct {
-	Url  string `json:"url"`
-	Type string `json:"type"`
+type GenerateColmapEvent struct {
+	AssetID string `json:"asset_id"`
+	Url     string `json:"url"`
+	Type    string `json:"type"`
 }
 
 // createAsset creates a new asset with provided details
@@ -174,7 +175,7 @@ func (server *Server) createAsset(ctx *gin.Context) {
 		return
 	}
 
-	err = publishGenerateSplatEvent(server.channel, &asset, &user)
+	err = publishGenerateColmapEvent(server, ctx, &asset, &user)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -188,9 +189,9 @@ func (server *Server) createAsset(ctx *gin.Context) {
 	ctx.JSON(http.StatusAccepted, res)
 }
 
-func publishGenerateSplatEvent(channel *amqp091.Channel, asset *db.Assets, user *db.Users) error {
+func publishGenerateColmapEvent(server *Server, ginCtx *gin.Context, asset *db.Assets, user *db.Users) error {
 	// create channel
-	q, err := channel.QueueDeclare("generate_splat", true, false, false, false, nil)
+	q, err := server.channel.QueueDeclare("generate_colmap", true, false, false, false, nil)
 	if err != nil {
 		return err
 	}
@@ -200,9 +201,10 @@ func publishGenerateSplatEvent(channel *amqp091.Channel, asset *db.Assets, user 
 	defer cancel()
 
 	// generate message
-	msg, err := json.Marshal(GenerateSplatEvent{
-		Url:  asset.AssetUrl,
-		Type: asset.AssetType,
+	msg, err := json.Marshal(GenerateColmapEvent{
+		AssetID: asset.ID.String(),
+		Url:     asset.AssetUrl,
+		Type:    asset.AssetType,
 	})
 	if err != nil {
 		return err
@@ -213,9 +215,19 @@ func publishGenerateSplatEvent(channel *amqp091.Channel, asset *db.Assets, user 
 		Body:         msg,
 	}
 
-	err = channel.PublishWithContext(ctx, "", q.Name, false, false, publishedMsg)
+	err = server.channel.PublishWithContext(ctx, "", q.Name, false, false, publishedMsg)
 	if err != nil {
 		return err
+	}
+
+	if asset.Status == "created" {
+		arg := db.UpdateAssetStatusParams{
+			Uid:    uuid.NullUUID{UUID: user.Uid, Valid: true},
+			ID:     asset.ID,
+			Status: "generating colmap",
+		}
+
+		server.store.UpdateAssetStatus(ginCtx, arg)
 	}
 
 	return nil
@@ -388,4 +400,204 @@ func (server *Server) removeAsset(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusAccepted, removeAssetResponse{Message: "Asset removed successfully", Asset: returnAssetResponse(&asset, &user)})
+}
+
+type UpdatePointCloudUrlRequest struct {
+	URL string `json:"url" binding:"required"`
+}
+
+type UpdatePointCloudUrlParam struct {
+	ID string `uri:"id" binding:"required"`
+}
+
+type UpdatePointCloudUrlResponse struct {
+	Message string        `json:"message"`
+	Asset   AssetResponse `json:"asset"`
+}
+
+type GenerateSplatEvent struct {
+	AssetID string `json:"asset_id"`
+	Url     string `json:"url"`
+	Type    string `json:"type"`
+}
+
+// UpdatePointCloudUrl updates the URL of a point cloud asset
+// @Summary Update point cloud URL
+// @Description Updates the URL for a specific point cloud asset based on the provided ID
+// @Tags assets
+// @Accept json
+// @Produce json
+// @Param   id   path   string     true  "Asset ID"
+// @Param   request  body   UpdatePointCloudUrlRequest     true  "Update Point Cloud URL Request"
+// @Success 200 {object} UpdatePointCloudUrlResponse "URL updated successfully"
+// @Security BearerAuth
+// @Router /assets/pointcloud/{id} [patch]
+func (server *Server) updatePointCloudUrl(ctx *gin.Context) {
+	payload, err := getUserPayload(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req UpdatePointCloudUrlRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var param UpdatePointCloudUrlParam
+	if err := ctx.ShouldBindUri(&param); err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserById(ctx, payload.Uid)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	arg := db.UpdatePointCloudUrlParams{
+		Uid:           uuid.NullUUID{UUID: payload.Uid, Valid: true},
+		ID:            uuid.MustParse(param.ID),
+		PointCloudUrl: sql.NullString{String: req.URL, Valid: true},
+	}
+
+	asset, err := server.store.UpdatePointCloudUrl(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	err = publishGenerateGaussianEvent(server, ctx, &asset, &user)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	res := UpdatePointCloudUrlResponse{
+		Message: "update success",
+		Asset:   returnAssetResponse(&asset, &user),
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func publishGenerateGaussianEvent(server *Server, ginCtx *gin.Context, asset *db.Assets, user *db.Users) error {
+	// create channel
+	q, err := server.channel.QueueDeclare("generate_gaussian", true, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+
+	// create context
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// generate message
+	msg, err := json.Marshal(GenerateSplatEvent{
+		AssetID: asset.ID.String(),
+		Url:     asset.AssetUrl,
+		Type:    asset.AssetType,
+	})
+	if err != nil {
+		return err
+	}
+	publishedMsg := amqp091.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: 2,
+		Body:         msg,
+	}
+
+	err = server.channel.PublishWithContext(ctx, "", q.Name, false, false, publishedMsg)
+	if err != nil {
+		return err
+	}
+
+	if asset.Status == "generating colmap" {
+		arg := db.UpdateAssetStatusParams{
+			Uid:    uuid.NullUUID{UUID: user.Uid, Valid: true},
+			ID:     asset.ID,
+			Status: "generating splat",
+		}
+
+		server.store.UpdateAssetStatus(ginCtx, arg)
+	}
+
+	return nil
+}
+
+type UpdateGaussianUrlRequest struct {
+	URL string `json:"url" binding:"required"`
+}
+
+type UpdateGaussianUrlParam struct {
+	ID string `uri:"id" binding:"required"`
+}
+
+type UpdateGaussianUrlResponse struct {
+	Message string        `json:"message"`
+	Asset   AssetResponse `json:"asset"`
+}
+
+// UpdateGaussianUrl updates the URL of a point cloud asset
+// @Summary Update point cloud URL
+// @Description Updates the URL for a specific gaussian asset based on the provided ID
+// @Tags assets
+// @Accept json
+// @Produce json
+// @Param   id   path   string     true  "Asset ID"
+// @Param   request  body   UpdateGaussianUrlRequest     true  "Update Gaussian URL Request"
+// @Success 200 {object} UpdateGaussianUrlResponse "URL updated successfully"
+// @Security BearerAuth
+// @Router /assets/gaussian/{id} [patch]
+func (server *Server) updateGaussianUrl(ctx *gin.Context) {
+	payload, err := getUserPayload(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req UpdateGaussianUrlRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var param UpdateGaussianUrlParam
+	if err := ctx.ShouldBindUri(&param); err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserById(ctx, payload.Uid)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	asset, err := server.store.GetAssetsById(ctx, uuid.MustParse(param.ID))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	arg := db.UpdateGaussianUrlParams{
+		Uid:         uuid.NullUUID{UUID: payload.Uid, Valid: true},
+		ID:          uuid.MustParse(param.ID),
+		GaussianUrl: sql.NullString{String: req.URL, Valid: true},
+	}
+
+	asset, err = server.store.UpdateGaussianUrl(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	res := UpdateGaussianUrlResponse{
+		Message: "update success",
+		Asset:   returnAssetResponse(&asset, &user),
+	}
+
+	ctx.JSON(http.StatusOK, res)
 }

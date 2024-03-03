@@ -324,7 +324,8 @@ func (q *Queries) GetSlug(ctx context.Context, slug string) ([]string, error) {
 
 const removeAsset = `-- name: RemoveAsset :one
 DELETE FROM "assets"
-WHERE uid = $1 AND id = $2
+WHERE uid = $1
+    AND id = $2
 RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussianUrl", "pointCloudUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
 `
 
@@ -335,6 +336,154 @@ type RemoveAssetParams struct {
 
 func (q *Queries) RemoveAsset(ctx context.Context, arg RemoveAssetParams) (Assets, error) {
 	row := q.db.QueryRowContext(ctx, removeAsset, arg.Uid, arg.ID)
+	var i Assets
+	err := row.Scan(
+		&i.ID,
+		&i.Uid,
+		&i.Title,
+		&i.Slug,
+		&i.AssetUrl,
+		&i.AssetType,
+		&i.ThumbnailUrl,
+		&i.GaussianUrl,
+		&i.PointCloudUrl,
+		&i.IsPrivate,
+		&i.Status,
+		&i.Likes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateAssetStatus = `-- name: UpdateAssetStatus :one
+UPDATE "assets"
+SET "status" = $3
+WHERE uid = $1
+    and id = $2
+RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussianUrl", "pointCloudUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
+`
+
+type UpdateAssetStatusParams struct {
+	Uid    uuid.NullUUID `json:"uid"`
+	ID     uuid.UUID     `json:"id"`
+	Status string        `json:"status"`
+}
+
+func (q *Queries) UpdateAssetStatus(ctx context.Context, arg UpdateAssetStatusParams) (Assets, error) {
+	row := q.db.QueryRowContext(ctx, updateAssetStatus, arg.Uid, arg.ID, arg.Status)
+	var i Assets
+	err := row.Scan(
+		&i.ID,
+		&i.Uid,
+		&i.Title,
+		&i.Slug,
+		&i.AssetUrl,
+		&i.AssetType,
+		&i.ThumbnailUrl,
+		&i.GaussianUrl,
+		&i.PointCloudUrl,
+		&i.IsPrivate,
+		&i.Status,
+		&i.Likes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateAssetUrl = `-- name: UpdateAssetUrl :one
+UPDATE "assets"
+SET "assetUrl" = $3
+WHERE uid = $1
+    and id = $2
+RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussianUrl", "pointCloudUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
+`
+
+type UpdateAssetUrlParams struct {
+	Uid      uuid.NullUUID `json:"uid"`
+	ID       uuid.UUID     `json:"id"`
+	AssetUrl string        `json:"assetUrl"`
+}
+
+func (q *Queries) UpdateAssetUrl(ctx context.Context, arg UpdateAssetUrlParams) (Assets, error) {
+	row := q.db.QueryRowContext(ctx, updateAssetUrl, arg.Uid, arg.ID, arg.AssetUrl)
+	var i Assets
+	err := row.Scan(
+		&i.ID,
+		&i.Uid,
+		&i.Title,
+		&i.Slug,
+		&i.AssetUrl,
+		&i.AssetType,
+		&i.ThumbnailUrl,
+		&i.GaussianUrl,
+		&i.PointCloudUrl,
+		&i.IsPrivate,
+		&i.Status,
+		&i.Likes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateGaussianUrl = `-- name: UpdateGaussianUrl :one
+UPDATE "assets"
+SET "gaussianUrl" = $3,
+    "status" = CASE
+        WHEN "status" = 'generating splat' THEN 'completed'
+        ELSE "status"
+    END
+WHERE uid = $1
+    and id = $2
+RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussianUrl", "pointCloudUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
+`
+
+type UpdateGaussianUrlParams struct {
+	Uid         uuid.NullUUID  `json:"uid"`
+	ID          uuid.UUID      `json:"id"`
+	GaussianUrl sql.NullString `json:"gaussianUrl"`
+}
+
+func (q *Queries) UpdateGaussianUrl(ctx context.Context, arg UpdateGaussianUrlParams) (Assets, error) {
+	row := q.db.QueryRowContext(ctx, updateGaussianUrl, arg.Uid, arg.ID, arg.GaussianUrl)
+	var i Assets
+	err := row.Scan(
+		&i.ID,
+		&i.Uid,
+		&i.Title,
+		&i.Slug,
+		&i.AssetUrl,
+		&i.AssetType,
+		&i.ThumbnailUrl,
+		&i.GaussianUrl,
+		&i.PointCloudUrl,
+		&i.IsPrivate,
+		&i.Status,
+		&i.Likes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updatePointCloudUrl = `-- name: UpdatePointCloudUrl :one
+UPDATE "assets"
+SET "pointCloudUrl" = $3
+WHERE uid = $1
+    and id = $2
+RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussianUrl", "pointCloudUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
+`
+
+type UpdatePointCloudUrlParams struct {
+	Uid           uuid.NullUUID  `json:"uid"`
+	ID            uuid.UUID      `json:"id"`
+	PointCloudUrl sql.NullString `json:"pointCloudUrl"`
+}
+
+func (q *Queries) UpdatePointCloudUrl(ctx context.Context, arg UpdatePointCloudUrlParams) (Assets, error) {
+	row := q.db.QueryRowContext(ctx, updatePointCloudUrl, arg.Uid, arg.ID, arg.PointCloudUrl)
 	var i Assets
 	err := row.Scan(
 		&i.ID,

@@ -22,6 +22,10 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (Users, error)
 	GetUserById(ctx context.Context, uid uuid.UUID) (Users, error)
 	RemoveAsset(ctx context.Context, arg RemoveAssetParams) (Assets, error)
+	UpdateAssetStatus(ctx context.Context, arg UpdateAssetStatusParams) (Assets, error)
+	UpdateAssetUrl(ctx context.Context, arg UpdateAssetUrlParams) (Assets, error)
+	UpdateGaussianUrl(ctx context.Context, arg UpdateGaussianUrlParams) (Assets, error)
+	UpdatePointCloudUrl(ctx context.Context, arg UpdatePointCloudUrlParams) (Assets, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (Users, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (Users, error)
 }

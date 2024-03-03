@@ -47,5 +47,34 @@ WHERE uid = $1
 ORDER BY "createdAt" DESC;
 -- name: RemoveAsset :one
 DELETE FROM "assets"
-WHERE uid = $1 AND id = $2
+WHERE uid = $1
+    AND id = $2
+RETURNING *;
+-- name: UpdatePointCloudUrl :one
+UPDATE "assets"
+SET "pointCloudUrl" = $3
+WHERE uid = $1
+    and id = $2
+RETURNING *;
+-- name: UpdateAssetUrl :one
+UPDATE "assets"
+SET "assetUrl" = $3
+WHERE uid = $1
+    and id = $2
+RETURNING *;
+-- name: UpdateGaussianUrl :one
+UPDATE "assets"
+SET "gaussianUrl" = $3,
+    "status" = CASE
+        WHEN "status" = 'generating splat' THEN 'completed'
+        ELSE "status"
+    END
+WHERE uid = $1
+    and id = $2
+RETURNING *;
+-- name: UpdateAssetStatus :one
+UPDATE "assets"
+SET "status" = $3
+WHERE uid = $1
+    and id = $2
 RETURNING *;

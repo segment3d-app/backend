@@ -1,18 +1,15 @@
 package api
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/rabbitmq/amqp091-go"
 	db "github.com/segment3d-app/segment3d-be/db/sqlc"
 	"github.com/segment3d-app/segment3d-be/util"
 )
@@ -175,7 +172,7 @@ func (server *Server) createAsset(ctx *gin.Context) {
 		return
 	}
 
-	err = publishGenerateColmapEvent(server, ctx, &asset, &user)
+	asset, err = publishGenerateColmapEvent(server, ctx, &asset, &user)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -189,17 +186,7 @@ func (server *Server) createAsset(ctx *gin.Context) {
 	ctx.JSON(http.StatusAccepted, res)
 }
 
-func publishGenerateColmapEvent(server *Server, ginCtx *gin.Context, asset *db.Assets, user *db.Users) error {
-	// create channel
-	q, err := server.channel.QueueDeclare("generate_colmap", true, false, false, false, nil)
-	if err != nil {
-		return err
-	}
-
-	// create context
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func publishGenerateColmapEvent(server *Server, ginCtx *gin.Context, asset *db.Assets, user *db.Users) (db.Assets, error) {
 	// generate message
 	msg, err := json.Marshal(GenerateColmapEvent{
 		AssetID: asset.ID.String(),
@@ -207,17 +194,12 @@ func publishGenerateColmapEvent(server *Server, ginCtx *gin.Context, asset *db.A
 		Type:    asset.AssetType,
 	})
 	if err != nil {
-		return err
-	}
-	publishedMsg := amqp091.Publishing{
-		ContentType:  "application/json",
-		DeliveryMode: 2,
-		Body:         msg,
+		return *asset, err
 	}
 
-	err = server.channel.PublishWithContext(ctx, "", q.Name, false, false, publishedMsg)
+	err = server.rabbitmq.PublishEvent("generate_colmap", msg)
 	if err != nil {
-		return err
+		return *asset, err
 	}
 
 	if asset.Status == "created" {
@@ -227,10 +209,15 @@ func publishGenerateColmapEvent(server *Server, ginCtx *gin.Context, asset *db.A
 			Status: "generating colmap",
 		}
 
-		server.store.UpdateAssetStatus(ginCtx, arg)
+		newAsset, err := server.store.UpdateAssetStatus(ginCtx, arg)
+		if err != nil {
+			return *asset, err
+		}
+
+		return newAsset, nil
 	}
 
-	return nil
+	return *asset, nil
 }
 
 type getAllAssetsResponse struct {
@@ -469,7 +456,7 @@ func (server *Server) updatePointCloudUrl(ctx *gin.Context) {
 		return
 	}
 
-	err = publishGenerateGaussianEvent(server, ctx, &asset, &user)
+	asset, err = publishGenerateGaussianEvent(server, ctx, &asset, &user)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -483,35 +470,20 @@ func (server *Server) updatePointCloudUrl(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func publishGenerateGaussianEvent(server *Server, ginCtx *gin.Context, asset *db.Assets, user *db.Users) error {
-	// create channel
-	q, err := server.channel.QueueDeclare("generate_gaussian", true, false, false, false, nil)
-	if err != nil {
-		return err
-	}
-
-	// create context
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func publishGenerateGaussianEvent(server *Server, ginCtx *gin.Context, asset *db.Assets, user *db.Users) (db.Assets, error) {
 	// generate message
 	msg, err := json.Marshal(GenerateSplatEvent{
 		AssetID: asset.ID.String(),
-		Url:     asset.AssetUrl,
+		Url:     asset.PointCloudUrl.String,
 		Type:    asset.AssetType,
 	})
 	if err != nil {
-		return err
-	}
-	publishedMsg := amqp091.Publishing{
-		ContentType:  "application/json",
-		DeliveryMode: 2,
-		Body:         msg,
+		return *asset, err
 	}
 
-	err = server.channel.PublishWithContext(ctx, "", q.Name, false, false, publishedMsg)
+	err = server.rabbitmq.PublishEvent("generate_splat", msg)
 	if err != nil {
-		return err
+		return *asset, err
 	}
 
 	if asset.Status == "generating colmap" {
@@ -521,10 +493,15 @@ func publishGenerateGaussianEvent(server *Server, ginCtx *gin.Context, asset *db
 			Status: "generating splat",
 		}
 
-		server.store.UpdateAssetStatus(ginCtx, arg)
+		newAsset, err := server.store.UpdateAssetStatus(ginCtx, arg)
+		if err != nil {
+			return *asset, nil
+		}
+
+		return newAsset, nil
 	}
 
-	return nil
+	return *asset, nil
 }
 
 type UpdateGaussianUrlRequest struct {

@@ -13,7 +13,7 @@ import (
 
 type Assets struct {
 	ID            uuid.UUID      `json:"id"`
-	Uid           uuid.NullUUID  `json:"uid"`
+	Uid           uuid.UUID      `json:"uid"`
 	Title         string         `json:"title"`
 	Slug          string         `json:"slug"`
 	AssetUrl      string         `json:"assetUrl"`
@@ -36,11 +36,10 @@ type AssetsToTags struct {
 }
 
 type Likes struct {
-	ID        uuid.UUID     `json:"id"`
-	Uid       uuid.NullUUID `json:"uid"`
-	AssetsId  uuid.NullUUID `json:"assetsId"`
-	CreatedAt time.Time     `json:"createdAt"`
-	UpdatedAt time.Time     `json:"updatedAt"`
+	Uid       uuid.UUID `json:"uid"`
+	AssetsId  uuid.UUID `json:"assetsId"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type Tags struct {
@@ -52,13 +51,13 @@ type Tags struct {
 }
 
 type Tasks struct {
-	ID        uuid.UUID     `json:"id"`
-	Uid       uuid.NullUUID `json:"uid"`
-	Title     string        `json:"title"`
-	Status    string        `json:"status"`
-	Url       string        `json:"url"`
-	CreatedAt time.Time     `json:"createdAt"`
-	UpdatedAt time.Time     `json:"updatedAt"`
+	ID        uuid.UUID `json:"id"`
+	Uid       uuid.UUID `json:"uid"`
+	Title     string    `json:"title"`
+	Status    string    `json:"status"`
+	Url       string    `json:"url"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type Users struct {

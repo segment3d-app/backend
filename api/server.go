@@ -19,7 +19,7 @@ type Server struct {
 	store      db.Store
 	router     *gin.Engine
 	tokenMaker token.Maker
-	rabbitmq    rabbitmq.RabbitMq
+	rabbitmq   rabbitmq.RabbitMq
 }
 
 type ErrorResponse struct {
@@ -31,7 +31,6 @@ func NewServer(config *util.Config, store db.Store, rmq *rabbitmq.RabbitMq) (*Se
 	if err != nil {
 		return nil, err
 	}
-
 
 	server := &Server{config: *config, store: store, tokenMaker: tokenMaker, rabbitmq: *rmq}
 	server.setupRouter()
@@ -46,6 +45,7 @@ func (server *Server) Start(address string) error {
 func (server *Server) setupRouter() {
 	router := gin.Default()
 	authenticatedRouter := router.Group("/").Use(authMiddleware(server.tokenMaker))
+	optionalAutenticatedRouter := router.Group("/").Use(optionalAuthMiddleware(server.tokenMaker))
 
 	// configure swagger docs
 	docs.SwaggerInfo.BasePath = "/api"
@@ -68,12 +68,14 @@ func (server *Server) setupRouter() {
 	authenticatedRouter.PATCH("/api/users/password", server.changeUserPassword)
 
 	// asset api
+	optionalAutenticatedRouter.GET("/api/assets", server.getAllAssets)
 	authenticatedRouter.POST("/api/assets", server.createAsset)
 	authenticatedRouter.GET("/api/assets/me", server.getMyAssets)
 	authenticatedRouter.DELETE("/api/assets/:id", server.removeAsset)
 	authenticatedRouter.PATCH("/api/assets/pointcloud/:id", server.updatePointCloudUrl)
 	authenticatedRouter.PATCH("/api/assets/gaussian/:id", server.updateGaussianUrl)
-	router.GET("/api/assets", server.getAllAssets)
+	authenticatedRouter.POST("/api/assets/like/:id", server.likeAsset)
+	authenticatedRouter.POST("/api/assets/unlike/:id", server.unlikeAsset)
 
 	server.router = router
 }

@@ -40,10 +40,30 @@ SELECT a.*,
 FROM "assets" AS a
     LEFT JOIN "users" AS u ON u.uid = a.uid
 ORDER BY a."createdAt" DESC;
+-- name: GetAllAssetsWithLikesInformation :many
+SELECT a.*,
+    u.name,
+    u.avatar,
+    u.email,
+    CASE
+        WHEN l.uid = $1 THEN TRUE
+        ELSE FALSE
+    END AS "isLikedByMe"
+FROM "assets" AS a
+    LEFT JOIN "users" AS u ON u.uid = a.uid
+    LEFT JOIN "likes" AS l ON l."assetsId" = a.id
+    AND l.uid = $1
+ORDER BY a."createdAt" DESC;
 -- name: GetMyAssets :many
-SELECT *
-FROM "assets"
-WHERE uid = $1
+SELECT a.*,
+    CASE
+        WHEN l.uid = $1 THEN TRUE
+        ELSE FALSE
+    END AS "isLikedByMe"
+FROM "assets" AS a
+    LEFT JOIN "likes" AS l ON l."assetsId" = a.id
+    AND l.uid = $1
+WHERE a.uid = $1
 ORDER BY "createdAt" DESC;
 -- name: RemoveAsset :one
 DELETE FROM "assets"
@@ -77,4 +97,29 @@ UPDATE "assets"
 SET "status" = $3
 WHERE uid = $1
     and id = $2
+RETURNING *;
+-- name: CheckIsLiked :one
+SELECT EXISTS (
+        SELECT 1
+        FROM "likes"
+        WHERE uid = $1
+            AND "assetsId" = $2
+    ) AS "exists";
+-- name: CreateLike :exec
+INSERT INTO "likes" (uid, "assetsId")
+VALUES ($1, $2);
+-- name: RemoveLike :one
+DELETE FROM "likes"
+WHERE uid = $1
+    AND "assetsId" = $2
+RETURNING *;
+-- name: IncreaseAssetLikes :one
+UPDATE "assets"
+SET likes = likes + 1
+WHERE "id" = $1
+RETURNING *;
+-- name: DecreaseAssetLikes :one
+UPDATE "assets"
+SET likes = likes - 1
+WHERE "id" = $1
 RETURNING *;

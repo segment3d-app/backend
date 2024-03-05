@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	db "github.com/segment3d-app/segment3d-be/db/sqlc"
 	"github.com/segment3d-app/segment3d-be/util"
 )
@@ -29,24 +30,32 @@ type AssetResponse struct {
 	CreatedAt     string       `json:"createdAt"`
 	UpdatedAt     string       `json:"updatedAt"`
 	User          UserResponse `json:"user"`
+	IsLikedByMe   bool         `json:"isLikedByMe"`
 }
 
-func returnAssetResponse(asset *db.Assets, user *db.Users) AssetResponse {
+type ReturnAssetResponseArg struct {
+	Asset       *db.Assets
+	User        *db.Users
+	IsLikedByMe bool
+}
+
+func ReturnAssetResponse(arg ReturnAssetResponseArg) AssetResponse {
 	return AssetResponse{
-		ID:            asset.ID.String(),
-		Title:         asset.Title,
-		Slug:          asset.Slug,
-		AssetType:     asset.AssetType,
-		Status:        asset.Status,
-		ThumbnailUrl:  asset.ThumbnailUrl,
-		AssetUrl:      asset.AssetUrl,
-		PointCloudUrl: asset.PointCloudUrl.String,
-		GaussianUrl:   asset.GaussianUrl.String,
-		IsPrivate:     asset.IsPrivate,
-		Likes:         int64(asset.Likes),
-		CreatedAt:     asset.CreatedAt.String(),
-		UpdatedAt:     asset.UpdatedAt.String(),
-		User:          *ReturnUserResponse(user),
+		ID:            arg.Asset.ID.String(),
+		Title:         arg.Asset.Title,
+		Slug:          arg.Asset.Slug,
+		AssetType:     arg.Asset.AssetType,
+		Status:        arg.Asset.Status,
+		ThumbnailUrl:  arg.Asset.ThumbnailUrl,
+		AssetUrl:      arg.Asset.AssetUrl,
+		PointCloudUrl: arg.Asset.PointCloudUrl.String,
+		GaussianUrl:   arg.Asset.GaussianUrl.String,
+		IsPrivate:     arg.Asset.IsPrivate,
+		Likes:         int64(arg.Asset.Likes),
+		CreatedAt:     arg.Asset.CreatedAt.String(),
+		UpdatedAt:     arg.Asset.UpdatedAt.String(),
+		User:          *ReturnUserResponse(arg.User),
+		IsLikedByMe:   arg.IsLikedByMe,
 	}
 }
 
@@ -151,7 +160,7 @@ func (server *Server) createAsset(ctx *gin.Context) {
 	}
 
 	arg := db.CreateAssetParams{
-		Uid:          uuid.NullUUID{UUID: user.Uid, Valid: true},
+		Uid:          user.Uid,
 		Title:        req.Title,
 		Slug:         slug,
 		Status:       "created",
@@ -180,7 +189,7 @@ func (server *Server) createAsset(ctx *gin.Context) {
 
 	res := CreateAssetsResponse{
 		Message: "generate splat from model",
-		Asset:   returnAssetResponse(&asset, &user),
+		Asset:   ReturnAssetResponse(ReturnAssetResponseArg{Asset: &asset, User: &user}),
 	}
 
 	ctx.JSON(http.StatusAccepted, res)
@@ -204,7 +213,7 @@ func publishGenerateColmapEvent(server *Server, ginCtx *gin.Context, asset *db.A
 
 	if asset.Status == "created" {
 		arg := db.UpdateAssetStatusParams{
-			Uid:    uuid.NullUUID{UUID: user.Uid, Valid: true},
+			Uid:    user.Uid,
 			ID:     asset.ID,
 			Status: "generating colmap",
 		}
@@ -231,45 +240,82 @@ type getAllAssetsResponse struct {
 // @Tags assets
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {object} getAllAssetsResponse "Success: Returns all assets."
 // @Failure 500 {object} ErrorResponse "Error: Internal Server Error"
 // @Router /assets [get]
 func (server *Server) getAllAssets(ctx *gin.Context) {
-	assets, err := server.store.GetAllAssets(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
+	payload, err := getUserPayload(ctx)
 
+	fmt.Println(payload, err)
 	var formattedAssets []AssetResponse
-
-	for _, asset := range assets {
-		var formattedAsset AssetResponse
-		fAsset := db.Assets{
-			ID:            asset.ID,
-			Title:         asset.Title,
-			Slug:          asset.Slug,
-			AssetType:     asset.AssetType,
-			Status:        asset.Status,
-			ThumbnailUrl:  asset.ThumbnailUrl,
-			AssetUrl:      asset.AssetUrl,
-			PointCloudUrl: asset.PointCloudUrl,
-			GaussianUrl:   asset.GaussianUrl,
-			IsPrivate:     asset.IsPrivate,
-			Likes:         asset.Likes,
-			CreatedAt:     asset.CreatedAt,
-			UpdatedAt:     asset.UpdatedAt,
-			Uid:           asset.Uid,
+	if err != nil {
+		assets, err := server.store.GetAllAssets(ctx)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
 		}
-		fUser := db.Users{
-			Uid:    asset.Uid.UUID,
-			Email:  asset.Email.String,
-			Avatar: asset.Avatar,
-			Name:   asset.Name,
+		for _, asset := range assets {
+			var formattedAsset AssetResponse
+			fAsset := db.Assets{
+				ID:            asset.ID,
+				Title:         asset.Title,
+				Slug:          asset.Slug,
+				AssetType:     asset.AssetType,
+				Status:        asset.Status,
+				ThumbnailUrl:  asset.ThumbnailUrl,
+				AssetUrl:      asset.AssetUrl,
+				PointCloudUrl: asset.PointCloudUrl,
+				GaussianUrl:   asset.GaussianUrl,
+				IsPrivate:     asset.IsPrivate,
+				Likes:         asset.Likes,
+				CreatedAt:     asset.CreatedAt,
+				UpdatedAt:     asset.UpdatedAt,
+				Uid:           asset.Uid,
+			}
+			fUser := db.Users{
+				Uid:    asset.Uid,
+				Email:  asset.Email.String,
+				Avatar: asset.Avatar,
+				Name:   asset.Name,
+			}
+			formattedAsset = ReturnAssetResponse(ReturnAssetResponseArg{Asset: &fAsset, User: &fUser})
+			formattedAssets = append(formattedAssets, formattedAsset)
 		}
-		formattedAsset = returnAssetResponse(&fAsset, &fUser)
-
-		formattedAssets = append(formattedAssets, formattedAsset)
+	} else {
+		assets, err := server.store.GetAllAssetsWithLikesInformation(ctx, payload.Uid)
+		fmt.Println(assets)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+		for _, asset := range assets {
+			var formattedAsset AssetResponse
+			fAsset := db.Assets{
+				ID:            asset.ID,
+				Title:         asset.Title,
+				Slug:          asset.Slug,
+				AssetType:     asset.AssetType,
+				Status:        asset.Status,
+				ThumbnailUrl:  asset.ThumbnailUrl,
+				AssetUrl:      asset.AssetUrl,
+				PointCloudUrl: asset.PointCloudUrl,
+				GaussianUrl:   asset.GaussianUrl,
+				IsPrivate:     asset.IsPrivate,
+				Likes:         asset.Likes,
+				CreatedAt:     asset.CreatedAt,
+				UpdatedAt:     asset.UpdatedAt,
+				Uid:           asset.Uid,
+			}
+			fUser := db.Users{
+				Uid:    asset.Uid,
+				Email:  asset.Email.String,
+				Avatar: asset.Avatar,
+				Name:   asset.Name,
+			}
+			formattedAsset = ReturnAssetResponse(ReturnAssetResponseArg{Asset: &fAsset, User: &fUser, IsLikedByMe: asset.IsLikedByMe})
+			formattedAssets = append(formattedAssets, formattedAsset)
+		}
 	}
 
 	ctx.JSON(http.StatusOK, getAllAssetsResponse{Message: "all assets returned", Assets: formattedAssets})
@@ -303,7 +349,7 @@ func (server *Server) getMyAssets(ctx *gin.Context) {
 		return
 	}
 
-	assets, err := server.store.GetMyAssets(ctx, uuid.NullUUID{UUID: user.Uid, Valid: true})
+	assets, err := server.store.GetMyAssets(ctx, user.Uid)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -329,7 +375,7 @@ func (server *Server) getMyAssets(ctx *gin.Context) {
 			UpdatedAt:     asset.UpdatedAt,
 			Uid:           asset.Uid,
 		}
-		formattedAsset = returnAssetResponse(&fAsset, &user)
+		formattedAsset = ReturnAssetResponse(ReturnAssetResponseArg{Asset: &fAsset, User: &user, IsLikedByMe: asset.IsLikedByMe.Bool})
 
 		formattedAssets = append(formattedAssets, formattedAsset)
 	}
@@ -370,7 +416,7 @@ func (server *Server) removeAsset(ctx *gin.Context) {
 	}
 
 	arg := db.RemoveAssetParams{
-		Uid: uuid.NullUUID{UUID: payload.Uid, Valid: true},
+		Uid: payload.Uid,
 		ID:  uuid.MustParse(req.ID),
 	}
 
@@ -386,7 +432,7 @@ func (server *Server) removeAsset(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusAccepted, removeAssetResponse{Message: "Asset removed successfully", Asset: returnAssetResponse(&asset, &user)})
+	ctx.JSON(http.StatusAccepted, removeAssetResponse{Message: "Asset removed successfully", Asset: ReturnAssetResponse(ReturnAssetResponseArg{Asset: &asset, User: &user})})
 }
 
 type UpdatePointCloudUrlRequest struct {
@@ -445,7 +491,7 @@ func (server *Server) updatePointCloudUrl(ctx *gin.Context) {
 	}
 
 	arg := db.UpdatePointCloudUrlParams{
-		Uid:           uuid.NullUUID{UUID: payload.Uid, Valid: true},
+		Uid:           payload.Uid,
 		ID:            uuid.MustParse(param.ID),
 		PointCloudUrl: sql.NullString{String: req.URL, Valid: true},
 	}
@@ -464,7 +510,7 @@ func (server *Server) updatePointCloudUrl(ctx *gin.Context) {
 
 	res := UpdatePointCloudUrlResponse{
 		Message: "update success",
-		Asset:   returnAssetResponse(&asset, &user),
+		Asset:   ReturnAssetResponse(ReturnAssetResponseArg{Asset: &asset, User: &user}),
 	}
 
 	ctx.JSON(http.StatusOK, res)
@@ -488,7 +534,7 @@ func publishGenerateGaussianEvent(server *Server, ginCtx *gin.Context, asset *db
 
 	if asset.Status == "generating colmap" {
 		arg := db.UpdateAssetStatusParams{
-			Uid:    uuid.NullUUID{UUID: user.Uid, Valid: true},
+			Uid:    user.Uid,
 			ID:     asset.ID,
 			Status: "generating splat",
 		}
@@ -560,7 +606,7 @@ func (server *Server) updateGaussianUrl(ctx *gin.Context) {
 	}
 
 	arg := db.UpdateGaussianUrlParams{
-		Uid:         uuid.NullUUID{UUID: payload.Uid, Valid: true},
+		Uid:         payload.Uid,
 		ID:          uuid.MustParse(param.ID),
 		GaussianUrl: sql.NullString{String: req.URL, Valid: true},
 	}
@@ -573,7 +619,149 @@ func (server *Server) updateGaussianUrl(ctx *gin.Context) {
 
 	res := UpdateGaussianUrlResponse{
 		Message: "update success",
-		Asset:   returnAssetResponse(&asset, &user),
+		Asset:   ReturnAssetResponse(ReturnAssetResponseArg{Asset: &asset, User: &user}),
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+type LikeAssetParam struct {
+	ID string `uri:"id" binding:"required"`
+}
+
+type LikeAssetResponse struct {
+	Message string        `json:"message"`
+	Asset   AssetResponse `json:"asset"`
+}
+
+// LikeAsset handler to like an asset
+// @Summary Like an asset
+// @Description Marks an asset as liked by the current user.
+// @Tags assets
+// @Accept json
+// @Produce json
+// @Param   id   path   string     true  "Asset ID"
+// @Security BearerAuth
+// @Success 200 {object} LikeAssetResponse "Asset liked successfully"
+// @Router /assets/like/{id} [post]
+func (server *Server) likeAsset(ctx *gin.Context) {
+	payload, err := getUserPayload(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req LikeAssetParam
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserById(ctx, payload.Uid)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	argCreateLike := db.CreateLikeParams{
+		Uid:      payload.Uid,
+		AssetsId: uuid.MustParse(req.ID),
+	}
+	err = server.store.CreateLike(ctx, argCreateLike)
+	if err != nil {
+		if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == "23505" {
+			asset, err := server.store.GetAssetsById(ctx, uuid.MustParse(req.ID))
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+				return
+			}
+			res := LikeAssetResponse{
+				Message: "asset already liked before",
+				Asset:   ReturnAssetResponse(ReturnAssetResponseArg{Asset: &asset, User: &user, IsLikedByMe: true}),
+			}
+			ctx.JSON(http.StatusConflict, res)
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	asset, err := server.store.IncreaseAssetLikes(ctx, uuid.MustParse(req.ID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	res := LikeAssetResponse{
+		Message: "like asset success",
+		Asset:   ReturnAssetResponse(ReturnAssetResponseArg{Asset: &asset, User: &user, IsLikedByMe: true}),
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+type UnlikeAssetParam struct {
+	ID string `uri:"id" binding:"required"`
+}
+
+type UnlikeAssetResponse struct {
+	Message string        `json:"message"`
+	Asset   AssetResponse `json:"asset"`
+}
+
+// UnlikeAsset handler to unlike an asset
+// @Summary Unlike an asset
+// @Description Marks an asset as unliked by the current user, removing the like.
+// @Tags assets
+// @Accept json
+// @Produce json
+// @Param   id   path   string     true  "Asset ID"
+// @Security BearerAuth
+// @Success 200 {object} UnlikeAssetResponse "Asset unliked successfully"
+// @Router /assets/unlike/{id} [post]
+func (server *Server) unlikeAsset(ctx *gin.Context) {
+	payload, err := getUserPayload(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserById(ctx, payload.Uid)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	var req UnlikeAssetParam
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.RemoveLikeParams{
+		Uid:      payload.Uid,
+		AssetsId: uuid.MustParse(req.ID),
+	}
+	_, err = server.store.RemoveLike(ctx, arg)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	asset, err := server.store.DecreaseAssetLikes(ctx, uuid.MustParse(req.ID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	res := UnlikeAssetResponse{
+		Message: "unlike asset success",
+		Asset:   ReturnAssetResponse(ReturnAssetResponseArg{Asset: &asset, User: &user}),
 	}
 
 	ctx.JSON(http.StatusOK, res)

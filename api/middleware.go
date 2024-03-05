@@ -50,3 +50,36 @@ func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+
+func optionalAuthMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		authorizationHeader := ctx.GetHeader(authorizationHeaderKey)
+
+		if len(authorizationHeader) == 0 {
+			ctx.Next()
+			return
+		}
+
+		field := strings.Fields(authorizationHeader)
+		if len(field) < 2 {
+			ctx.Next()
+			return
+		}
+
+		authorizationType := strings.ToLower(field[0])
+		if authorizationType != strings.ToLower(authorizationHeaderBearer) {
+			ctx.Next()
+			return
+		}
+
+		accessToken := field[1]
+		payload, err := tokenMaker.VerifyToken(accessToken)
+		if err != nil {
+			ctx.Next()
+			return
+		}
+
+		ctx.Set(authorizationPayloadKey, payload)
+		ctx.Next()
+	}
+}

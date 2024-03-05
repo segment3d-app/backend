@@ -13,6 +13,27 @@ import (
 	"github.com/google/uuid"
 )
 
+const checkIsLiked = `-- name: CheckIsLiked :one
+SELECT EXISTS (
+        SELECT 1
+        FROM "likes"
+        WHERE uid = $1
+            AND "assetsId" = $2
+    ) AS "exists"
+`
+
+type CheckIsLikedParams struct {
+	Uid      uuid.UUID `json:"uid"`
+	AssetsId uuid.UUID `json:"assetsId"`
+}
+
+func (q *Queries) CheckIsLiked(ctx context.Context, arg CheckIsLikedParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, checkIsLiked, arg.Uid, arg.AssetsId)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const createAsset = `-- name: CreateAsset :one
 INSERT INTO "assets" (
         uid,
@@ -30,15 +51,15 @@ RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussi
 `
 
 type CreateAssetParams struct {
-	Uid          uuid.NullUUID `json:"uid"`
-	Title        string        `json:"title"`
-	Slug         string        `json:"slug"`
-	Status       string        `json:"status"`
-	AssetUrl     string        `json:"assetUrl"`
-	AssetType    string        `json:"assetType"`
-	ThumbnailUrl string        `json:"thumbnailUrl"`
-	IsPrivate    bool          `json:"isPrivate"`
-	Likes        int32         `json:"likes"`
+	Uid          uuid.UUID `json:"uid"`
+	Title        string    `json:"title"`
+	Slug         string    `json:"slug"`
+	Status       string    `json:"status"`
+	AssetUrl     string    `json:"assetUrl"`
+	AssetType    string    `json:"assetType"`
+	ThumbnailUrl string    `json:"thumbnailUrl"`
+	IsPrivate    bool      `json:"isPrivate"`
+	Likes        int32     `json:"likes"`
 }
 
 func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Assets, error) {
@@ -73,6 +94,50 @@ func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset
 	return i, err
 }
 
+const createLike = `-- name: CreateLike :exec
+INSERT INTO "likes" (uid, "assetsId")
+VALUES ($1, $2)
+`
+
+type CreateLikeParams struct {
+	Uid      uuid.UUID `json:"uid"`
+	AssetsId uuid.UUID `json:"assetsId"`
+}
+
+func (q *Queries) CreateLike(ctx context.Context, arg CreateLikeParams) error {
+	_, err := q.db.ExecContext(ctx, createLike, arg.Uid, arg.AssetsId)
+	return err
+}
+
+const decreaseAssetLikes = `-- name: DecreaseAssetLikes :one
+UPDATE "assets"
+SET likes = likes - 1
+WHERE "id" = $1
+RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussianUrl", "pointCloudUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
+`
+
+func (q *Queries) DecreaseAssetLikes(ctx context.Context, id uuid.UUID) (Assets, error) {
+	row := q.db.QueryRowContext(ctx, decreaseAssetLikes, id)
+	var i Assets
+	err := row.Scan(
+		&i.ID,
+		&i.Uid,
+		&i.Title,
+		&i.Slug,
+		&i.AssetUrl,
+		&i.AssetType,
+		&i.ThumbnailUrl,
+		&i.GaussianUrl,
+		&i.PointCloudUrl,
+		&i.IsPrivate,
+		&i.Status,
+		&i.Likes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getAllAssets = `-- name: GetAllAssets :many
 SELECT a.id, a.uid, a.title, a.slug, a."assetUrl", a."assetType", a."thumbnailUrl", a."gaussianUrl", a."pointCloudUrl", a."isPrivate", a.status, a.likes, a."createdAt", a."updatedAt",
     u.name,
@@ -85,7 +150,7 @@ ORDER BY a."createdAt" DESC
 
 type GetAllAssetsRow struct {
 	ID            uuid.UUID      `json:"id"`
-	Uid           uuid.NullUUID  `json:"uid"`
+	Uid           uuid.UUID      `json:"uid"`
 	Title         string         `json:"title"`
 	Slug          string         `json:"slug"`
 	AssetUrl      string         `json:"assetUrl"`
@@ -130,6 +195,85 @@ func (q *Queries) GetAllAssets(ctx context.Context) ([]GetAllAssetsRow, error) {
 			&i.Name,
 			&i.Avatar,
 			&i.Email,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllAssetsWithLikesInformation = `-- name: GetAllAssetsWithLikesInformation :many
+SELECT a.id, a.uid, a.title, a.slug, a."assetUrl", a."assetType", a."thumbnailUrl", a."gaussianUrl", a."pointCloudUrl", a."isPrivate", a.status, a.likes, a."createdAt", a."updatedAt",
+    u.name,
+    u.avatar,
+    u.email,
+    CASE
+        WHEN l.uid = $1 THEN TRUE
+        ELSE FALSE
+    END AS "isLikedByMe"
+FROM "assets" AS a
+    LEFT JOIN "users" AS u ON u.uid = a.uid
+    LEFT JOIN "likes" AS l ON l."assetsId" = a.id
+    AND l.uid = $1
+ORDER BY a."createdAt" DESC
+`
+
+type GetAllAssetsWithLikesInformationRow struct {
+	ID            uuid.UUID      `json:"id"`
+	Uid           uuid.UUID      `json:"uid"`
+	Title         string         `json:"title"`
+	Slug          string         `json:"slug"`
+	AssetUrl      string         `json:"assetUrl"`
+	AssetType     string         `json:"assetType"`
+	ThumbnailUrl  string         `json:"thumbnailUrl"`
+	GaussianUrl   sql.NullString `json:"gaussianUrl"`
+	PointCloudUrl sql.NullString `json:"pointCloudUrl"`
+	IsPrivate     bool           `json:"isPrivate"`
+	Status        string         `json:"status"`
+	Likes         int32          `json:"likes"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+	Name          sql.NullString `json:"name"`
+	Avatar        sql.NullString `json:"avatar"`
+	Email         sql.NullString `json:"email"`
+	IsLikedByMe   bool           `json:"isLikedByMe"`
+}
+
+func (q *Queries) GetAllAssetsWithLikesInformation(ctx context.Context, uid uuid.UUID) ([]GetAllAssetsWithLikesInformationRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllAssetsWithLikesInformation, uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetAllAssetsWithLikesInformationRow{}
+	for rows.Next() {
+		var i GetAllAssetsWithLikesInformationRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uid,
+			&i.Title,
+			&i.Slug,
+			&i.AssetUrl,
+			&i.AssetType,
+			&i.ThumbnailUrl,
+			&i.GaussianUrl,
+			&i.PointCloudUrl,
+			&i.IsPrivate,
+			&i.Status,
+			&i.Likes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Name,
+			&i.Avatar,
+			&i.Email,
+			&i.IsLikedByMe,
 		); err != nil {
 			return nil, err
 		}
@@ -209,7 +353,7 @@ WHERE uid = $1
 ORDER BY "createdAt" DESC
 `
 
-func (q *Queries) GetAssetsByUid(ctx context.Context, uid uuid.NullUUID) ([]Assets, error) {
+func (q *Queries) GetAssetsByUid(ctx context.Context, uid uuid.UUID) ([]Assets, error) {
 	rows, err := q.db.QueryContext(ctx, getAssetsByUid, uid)
 	if err != nil {
 		return nil, err
@@ -248,21 +392,45 @@ func (q *Queries) GetAssetsByUid(ctx context.Context, uid uuid.NullUUID) ([]Asse
 }
 
 const getMyAssets = `-- name: GetMyAssets :many
-SELECT id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussianUrl", "pointCloudUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
-FROM "assets"
-WHERE uid = $1
+SELECT a.id, a.uid, a.title, a.slug, a."assetUrl", a."assetType", a."thumbnailUrl", a."gaussianUrl", a."pointCloudUrl", a."isPrivate", a.status, a.likes, a."createdAt", a."updatedAt",
+    CASE
+        WHEN l.uid = $1 THEN TRUE
+        ELSE FALSE
+    END AS "isLikedByMe"
+FROM "assets" AS a
+    LEFT JOIN "likes" AS l ON l."assetsId" = a.id
+    AND l.uid = $1
+WHERE a.uid = $1
 ORDER BY "createdAt" DESC
 `
 
-func (q *Queries) GetMyAssets(ctx context.Context, uid uuid.NullUUID) ([]Assets, error) {
+type GetMyAssetsRow struct {
+	ID            uuid.UUID      `json:"id"`
+	Uid           uuid.UUID      `json:"uid"`
+	Title         string         `json:"title"`
+	Slug          string         `json:"slug"`
+	AssetUrl      string         `json:"assetUrl"`
+	AssetType     string         `json:"assetType"`
+	ThumbnailUrl  string         `json:"thumbnailUrl"`
+	GaussianUrl   sql.NullString `json:"gaussianUrl"`
+	PointCloudUrl sql.NullString `json:"pointCloudUrl"`
+	IsPrivate     bool           `json:"isPrivate"`
+	Status        string         `json:"status"`
+	Likes         int32          `json:"likes"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+	IsLikedByMe   sql.NullBool   `json:"isLikedByMe"`
+}
+
+func (q *Queries) GetMyAssets(ctx context.Context, uid uuid.UUID) ([]GetMyAssetsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getMyAssets, uid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Assets{}
+	items := []GetMyAssetsRow{}
 	for rows.Next() {
-		var i Assets
+		var i GetMyAssetsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Uid,
@@ -278,6 +446,7 @@ func (q *Queries) GetMyAssets(ctx context.Context, uid uuid.NullUUID) ([]Assets,
 			&i.Likes,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsLikedByMe,
 		); err != nil {
 			return nil, err
 		}
@@ -322,6 +491,35 @@ func (q *Queries) GetSlug(ctx context.Context, slug string) ([]string, error) {
 	return items, nil
 }
 
+const increaseAssetLikes = `-- name: IncreaseAssetLikes :one
+UPDATE "assets"
+SET likes = likes + 1
+WHERE "id" = $1
+RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussianUrl", "pointCloudUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
+`
+
+func (q *Queries) IncreaseAssetLikes(ctx context.Context, id uuid.UUID) (Assets, error) {
+	row := q.db.QueryRowContext(ctx, increaseAssetLikes, id)
+	var i Assets
+	err := row.Scan(
+		&i.ID,
+		&i.Uid,
+		&i.Title,
+		&i.Slug,
+		&i.AssetUrl,
+		&i.AssetType,
+		&i.ThumbnailUrl,
+		&i.GaussianUrl,
+		&i.PointCloudUrl,
+		&i.IsPrivate,
+		&i.Status,
+		&i.Likes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const removeAsset = `-- name: RemoveAsset :one
 DELETE FROM "assets"
 WHERE uid = $1
@@ -330,8 +528,8 @@ RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussi
 `
 
 type RemoveAssetParams struct {
-	Uid uuid.NullUUID `json:"uid"`
-	ID  uuid.UUID     `json:"id"`
+	Uid uuid.UUID `json:"uid"`
+	ID  uuid.UUID `json:"id"`
 }
 
 func (q *Queries) RemoveAsset(ctx context.Context, arg RemoveAssetParams) (Assets, error) {
@@ -356,6 +554,30 @@ func (q *Queries) RemoveAsset(ctx context.Context, arg RemoveAssetParams) (Asset
 	return i, err
 }
 
+const removeLike = `-- name: RemoveLike :one
+DELETE FROM "likes"
+WHERE uid = $1
+    AND "assetsId" = $2
+RETURNING uid, "assetsId", "createdAt", "updatedAt"
+`
+
+type RemoveLikeParams struct {
+	Uid      uuid.UUID `json:"uid"`
+	AssetsId uuid.UUID `json:"assetsId"`
+}
+
+func (q *Queries) RemoveLike(ctx context.Context, arg RemoveLikeParams) (Likes, error) {
+	row := q.db.QueryRowContext(ctx, removeLike, arg.Uid, arg.AssetsId)
+	var i Likes
+	err := row.Scan(
+		&i.Uid,
+		&i.AssetsId,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateAssetStatus = `-- name: UpdateAssetStatus :one
 UPDATE "assets"
 SET "status" = $3
@@ -365,9 +587,9 @@ RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussi
 `
 
 type UpdateAssetStatusParams struct {
-	Uid    uuid.NullUUID `json:"uid"`
-	ID     uuid.UUID     `json:"id"`
-	Status string        `json:"status"`
+	Uid    uuid.UUID `json:"uid"`
+	ID     uuid.UUID `json:"id"`
+	Status string    `json:"status"`
 }
 
 func (q *Queries) UpdateAssetStatus(ctx context.Context, arg UpdateAssetStatusParams) (Assets, error) {
@@ -401,9 +623,9 @@ RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussi
 `
 
 type UpdateAssetUrlParams struct {
-	Uid      uuid.NullUUID `json:"uid"`
-	ID       uuid.UUID     `json:"id"`
-	AssetUrl string        `json:"assetUrl"`
+	Uid      uuid.UUID `json:"uid"`
+	ID       uuid.UUID `json:"id"`
+	AssetUrl string    `json:"assetUrl"`
 }
 
 func (q *Queries) UpdateAssetUrl(ctx context.Context, arg UpdateAssetUrlParams) (Assets, error) {
@@ -441,7 +663,7 @@ RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussi
 `
 
 type UpdateGaussianUrlParams struct {
-	Uid         uuid.NullUUID  `json:"uid"`
+	Uid         uuid.UUID      `json:"uid"`
 	ID          uuid.UUID      `json:"id"`
 	GaussianUrl sql.NullString `json:"gaussianUrl"`
 }
@@ -477,7 +699,7 @@ RETURNING id, uid, title, slug, "assetUrl", "assetType", "thumbnailUrl", "gaussi
 `
 
 type UpdatePointCloudUrlParams struct {
-	Uid           uuid.NullUUID  `json:"uid"`
+	Uid           uuid.UUID      `json:"uid"`
 	ID            uuid.UUID      `json:"id"`
 	PointCloudUrl sql.NullString `json:"pointCloudUrl"`
 }

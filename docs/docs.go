@@ -17,6 +17,11 @@ const docTemplate = `{
     "paths": {
         "/assets": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves a list of all assets, including their associated user details.",
                 "consumes": [
                     "application/json"
@@ -127,6 +132,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/assets/like/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks an asset as liked by the current user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assets"
+                ],
+                "summary": "Like an asset",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Asset liked successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.LikeAssetResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/assets/me": {
             "get": {
                 "security": [
@@ -202,6 +244,43 @@ const docTemplate = `{
                         "description": "URL updated successfully",
                         "schema": {
                             "$ref": "#/definitions/api.UpdatePointCloudUrlResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/assets/unlike/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks an asset as unliked by the current user, removing the like.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assets"
+                ],
+                "summary": "Unlike an asset",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Asset unliked successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.UnlikeAssetResponse"
                         }
                     }
                 }
@@ -471,6 +550,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "isLikedByMe": {
+                    "type": "boolean"
+                },
                 "isPrivate": {
                     "type": "boolean"
                 },
@@ -542,6 +624,28 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.LikeAssetResponse": {
+            "type": "object",
+            "properties": {
+                "asset": {
+                    "$ref": "#/definitions/api.AssetResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.UnlikeAssetResponse": {
+            "type": "object",
+            "properties": {
+                "asset": {
+                    "$ref": "#/definitions/api.AssetResponse"
+                },
+                "message": {
                     "type": "string"
                 }
             }

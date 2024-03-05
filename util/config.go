@@ -14,6 +14,7 @@ type Config struct {
 	TokenSymmetricKey   string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	RabbitSource        string        `mapstructure:"RABBIT_SOURCE"`
+	BackendSwaggerHost  string        `mapstructure:"BACKEND_SWAGGER_HOST"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

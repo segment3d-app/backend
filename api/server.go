@@ -49,6 +49,7 @@ func (server *Server) setupRouter() {
 
 	// configure swagger docs
 	docs.SwaggerInfo.BasePath = "/api"
+	docs.SwaggerInfo.Host = server.config.BackendSwaggerHost
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	// health check api

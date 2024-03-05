@@ -247,7 +247,6 @@ type getAllAssetsResponse struct {
 func (server *Server) getAllAssets(ctx *gin.Context) {
 	payload, err := getUserPayload(ctx)
 
-	fmt.Println(payload, err)
 	var formattedAssets []AssetResponse
 	if err != nil {
 		assets, err := server.store.GetAllAssets(ctx)
@@ -284,7 +283,6 @@ func (server *Server) getAllAssets(ctx *gin.Context) {
 		}
 	} else {
 		assets, err := server.store.GetAllAssetsWithLikesInformation(ctx, payload.Uid)
-		fmt.Println(assets)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return

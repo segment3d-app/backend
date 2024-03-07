@@ -13,7 +13,9 @@ import (
 type Querier interface {
 	CheckIsLiked(ctx context.Context, arg CheckIsLikedParams) (bool, error)
 	CreateAsset(ctx context.Context, arg CreateAssetParams) (Assets, error)
+	CreateAssetsToTags(ctx context.Context, arg CreateAssetsToTagsParams) (AssetsToTags, error)
 	CreateLike(ctx context.Context, arg CreateLikeParams) error
+	CreateTag(ctx context.Context, arg CreateTagParams) (Tags, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (Users, error)
 	DecreaseAssetLikes(ctx context.Context, id uuid.UUID) (Assets, error)
 	GetAllAssets(ctx context.Context) ([]GetAllAssetsRow, error)
@@ -23,6 +25,7 @@ type Querier interface {
 	GetAssetsByUid(ctx context.Context, uid uuid.UUID) ([]Assets, error)
 	GetMyAssets(ctx context.Context, uid uuid.UUID) ([]GetMyAssetsRow, error)
 	GetSlug(ctx context.Context, slug string) ([]string, error)
+	GetTagsByTagsName(ctx context.Context, name []string) ([]Tags, error)
 	GetUserByEmail(ctx context.Context, email string) (Users, error)
 	GetUserById(ctx context.Context, uid uuid.UUID) (Users, error)
 	IncreaseAssetLikes(ctx context.Context, id uuid.UUID) (Assets, error)

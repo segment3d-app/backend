@@ -60,10 +60,11 @@ func ReturnAssetResponse(arg ReturnAssetResponseArg) AssetResponse {
 }
 
 type CreateAssetRequest struct {
-	Title     string `json:"title" binding:"required"`
-	IsPrivate *bool  `json:"isPrivate" binding:"required"`
-	AssetUrl  string `json:"assetUrl" binding:"required"`
-	AssetType string `json:"assetType" binding:"required,oneof=images video"`
+	Title     string   `json:"title" binding:"required"`
+	IsPrivate *bool    `json:"isPrivate" binding:"required"`
+	AssetUrl  string   `json:"assetUrl" binding:"required"`
+	AssetType string   `json:"assetType" binding:"required,oneof=images video"`
+	Tags      []string `json:"tags"`
 }
 
 type CreateAssetsResponse struct {
@@ -179,6 +180,50 @@ func (server *Server) createAsset(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
+	}
+
+	tags, err := server.store.GetTagsByTagsName(ctx, req.Tags)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	var allTags []db.Tags
+	allTags = append(allTags, tags...)
+	
+	for _, curTag := range req.Tags {
+		createTag := true
+		for _, tag := range tags {
+			if curTag == tag.Name {
+				createTag = false
+				break
+			}
+		}
+
+		if createTag {
+			tag, err := server.store.CreateTag(ctx, db.CreateTagParams{
+				Name: curTag,
+				Slug: util.GenerateBaseSlug(curTag),
+			})
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+				return
+			}
+
+			allTags = append(allTags, tag)
+		}	
+	}
+
+	for _, tag := range allTags {
+		_, err := server.store.CreateAssetsToTags(ctx, db.CreateAssetsToTagsParams{
+			AssetsId: asset.ID,
+			TagsId: tag.ID,
+		})
+
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
 	}
 
 	asset, err = publishGenerateColmapEvent(server, ctx, &asset, &user)

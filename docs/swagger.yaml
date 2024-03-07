@@ -44,6 +44,10 @@ definitions:
         type: string
       isPrivate:
         type: boolean
+      tags:
+        items:
+          type: string
+        type: array
       title:
         type: string
     required:

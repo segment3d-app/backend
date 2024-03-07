@@ -604,6 +604,12 @@ const docTemplate = `{
                 "isPrivate": {
                     "type": "boolean"
                 },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "title": {
                     "type": "string"
                 }

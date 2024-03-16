@@ -68,6 +68,15 @@ definitions:
       error:
         type: string
     type: object
+  api.GetTagBySearchKeywordResponse:
+    properties:
+      message:
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/db.Tags'
+        type: array
+    type: object
   api.LikeAssetResponse:
     properties:
       asset:
@@ -231,6 +240,19 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/api.UserResponse'
+    type: object
+  db.Tags:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+      updatedAt:
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -503,6 +525,29 @@ paths:
       summary: Register a new user
       tags:
       - auth
+  /tags/search:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of tags that match the given search keyword
+      parameters:
+      - description: Search keyword
+        in: query
+        name: keyword
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/api.GetTagBySearchKeywordResponse'
+      security:
+      - BearerAuth: []
+      summary: Get tags by search keyword
+      tags:
+      - tags
   /users:
     get:
       consumes:

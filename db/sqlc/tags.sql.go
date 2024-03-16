@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/lib/pq"
 )
@@ -33,6 +34,41 @@ func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (Tags, err
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getTagsByKeyword = `-- name: GetTagsByKeyword :many
+SELECT id, name, slug, "createdAt", "updatedAt" FROM tags
+WHERE name LIKE '%' || $1 || '%' 
+LIMIT 5
+`
+
+func (q *Queries) GetTagsByKeyword(ctx context.Context, dollar_1 sql.NullString) ([]Tags, error) {
+	rows, err := q.db.QueryContext(ctx, getTagsByKeyword, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Tags{}
+	for rows.Next() {
+		var i Tags
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getTagsByTagsName = `-- name: GetTagsByTagsName :many

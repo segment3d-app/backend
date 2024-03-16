@@ -6,6 +6,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -25,6 +26,7 @@ type Querier interface {
 	GetAssetsByUid(ctx context.Context, uid uuid.UUID) ([]Assets, error)
 	GetMyAssets(ctx context.Context, uid uuid.UUID) ([]GetMyAssetsRow, error)
 	GetSlug(ctx context.Context, slug string) ([]string, error)
+	GetTagsByKeyword(ctx context.Context, dollar_1 sql.NullString) ([]Tags, error)
 	GetTagsByTagsName(ctx context.Context, name []string) ([]Tags, error)
 	GetUserByEmail(ctx context.Context, email string) (Users, error)
 	GetUserById(ctx context.Context, uid uuid.UUID) (Users, error)

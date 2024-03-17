@@ -321,7 +321,6 @@ func (server *Server) getAllAssets(ctx *gin.Context) {
 			uniqueAssets := make(map[uuid.UUID]db.GetAllAssetsByKeywordRow)
 
 			for _, asset := range assets {
-				fmt.Println(asset.TagNames, filterValues, len(asset.TagNames), len(filterValues))
 				for _, curTag := range asset.TagNames {
 					for _, tag := range filterValues {
 						if curTag == tag {

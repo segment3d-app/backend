@@ -265,8 +265,17 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieves a list of all assets, including their associated user
-        details.
+      description: Retrieves a list of all assets, optionally filtered by keyword
+        and tags, including their associated user details.
+      parameters:
+      - description: Keyword for searching assets by title
+        in: query
+        name: keyword
+        type: string
+      - description: Comma-separated list of tags to filter the assets
+        in: query
+        name: filter
+        type: string
       produces:
       - application/json
       responses:
@@ -274,6 +283,10 @@ paths:
           description: 'Success: Returns all assets.'
           schema:
             $ref: '#/definitions/api.getAllAssetsResponse'
+        "400":
+          description: 'Error: Bad Request'
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
         "500":
           description: 'Error: Internal Server Error'
           schema:
@@ -388,14 +401,28 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieves a list of my assets
+      description: Retrieves a list of my assets, optionally filtered by keyword and
+        tags.
+      parameters:
+      - description: Keyword for searching assets by title
+        in: query
+        name: keyword
+        type: string
+      - description: Comma-separated list of tags to filter the assets
+        in: query
+        name: filter
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: 'Success: Returns all assets.'
+          description: 'Success: Returns all my assets.'
           schema:
             $ref: '#/definitions/api.getMyAssetsResponse'
+        "400":
+          description: 'Error: Bad Request'
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
         "500":
           description: 'Error: Internal Server Error'
           schema:
@@ -536,6 +563,11 @@ paths:
         name: keyword
         required: true
         type: string
+      - description: Limit for number of tags returned
+        in: query
+        name: limit
+        required: true
+        type: integer
       produces:
       - application/json
       responses:

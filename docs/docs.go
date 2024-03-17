@@ -22,7 +22,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieves a list of all assets, including their associated user details.",
+                "description": "Retrieves a list of all assets, optionally filtered by keyword and tags, including their associated user details.",
                 "consumes": [
                     "application/json"
                 ],
@@ -33,11 +33,31 @@ const docTemplate = `{
                     "assets"
                 ],
                 "summary": "Get all assets",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Keyword for searching assets by title",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated list of tags to filter the assets",
+                        "name": "filter",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Success: Returns all assets.",
                         "schema": {
                             "$ref": "#/definitions/api.getAllAssetsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Error: Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
                         }
                     },
                     "500": {
@@ -176,7 +196,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieves a list of my assets",
+                "description": "Retrieves a list of my assets, optionally filtered by keyword and tags.",
                 "consumes": [
                     "application/json"
                 ],
@@ -187,11 +207,31 @@ const docTemplate = `{
                     "assets"
                 ],
                 "summary": "Get my assets",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Keyword for searching assets by title",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated list of tags to filter the assets",
+                        "name": "filter",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Success: Returns all assets.",
+                        "description": "Success: Returns all my assets.",
                         "schema": {
                             "$ref": "#/definitions/api.getMyAssetsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Error: Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
                         }
                     },
                     "500": {
@@ -449,6 +489,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Search keyword",
                         "name": "keyword",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit for number of tags returned",
+                        "name": "limit",
                         "in": "query",
                         "required": true
                     }

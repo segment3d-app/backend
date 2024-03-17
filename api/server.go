@@ -78,7 +78,7 @@ func (server *Server) setupRouter() {
 	authenticatedRouter.POST("/api/assets/unlike/:id", server.unlikeAsset)
 
 	// tag api
-	authenticatedRouter.GET("/api/tags/search", server.GetTagBySearchKeyword)
+	router.GET("/api/tags/search", server.GetTagBySearchKeyword)
 
 	server.router = router
 }

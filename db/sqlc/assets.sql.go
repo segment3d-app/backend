@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 const checkIsLiked = `-- name: CheckIsLiked :one
@@ -209,6 +210,86 @@ func (q *Queries) GetAllAssets(ctx context.Context) ([]GetAllAssetsRow, error) {
 	return items, nil
 }
 
+const getAllAssetsByKeyword = `-- name: GetAllAssetsByKeyword :many
+SELECT a.id, a.uid, a.title, a.slug, a."assetUrl", a."assetType", a."thumbnailUrl", a."gaussianUrl", a."pointCloudUrl", a."isPrivate", a.status, a.likes, a."createdAt", a."updatedAt",
+    u.name,
+    u.avatar,
+    u.email,
+    (
+        SELECT ARRAY_AGG(t.name)
+        FROM "tags" AS t
+            INNER JOIN "assetsToTags" AS att ON att."tagsId" = t.id
+        WHERE att."assetsId" = a.id
+    ) AS tag_names
+FROM "assets" AS a
+    LEFT JOIN "users" AS u ON u.uid = a.uid
+WHERE a.title LIKE '%' || $1 || '%'
+ORDER BY a."createdAt" DESC
+`
+
+type GetAllAssetsByKeywordRow struct {
+	ID            uuid.UUID      `json:"id"`
+	Uid           uuid.UUID      `json:"uid"`
+	Title         string         `json:"title"`
+	Slug          string         `json:"slug"`
+	AssetUrl      string         `json:"assetUrl"`
+	AssetType     string         `json:"assetType"`
+	ThumbnailUrl  string         `json:"thumbnailUrl"`
+	GaussianUrl   sql.NullString `json:"gaussianUrl"`
+	PointCloudUrl sql.NullString `json:"pointCloudUrl"`
+	IsPrivate     bool           `json:"isPrivate"`
+	Status        string         `json:"status"`
+	Likes         int32          `json:"likes"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+	Name          sql.NullString `json:"name"`
+	Avatar        sql.NullString `json:"avatar"`
+	Email         sql.NullString `json:"email"`
+	TagNames      []string       `json:"tag_names"`
+}
+
+func (q *Queries) GetAllAssetsByKeyword(ctx context.Context, dollar_1 sql.NullString) ([]GetAllAssetsByKeywordRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllAssetsByKeyword, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetAllAssetsByKeywordRow{}
+	for rows.Next() {
+		var i GetAllAssetsByKeywordRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uid,
+			&i.Title,
+			&i.Slug,
+			&i.AssetUrl,
+			&i.AssetType,
+			&i.ThumbnailUrl,
+			&i.GaussianUrl,
+			&i.PointCloudUrl,
+			&i.IsPrivate,
+			&i.Status,
+			&i.Likes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Name,
+			&i.Avatar,
+			&i.Email,
+			pq.Array(&i.TagNames),
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAllAssetsWithLikesInformation = `-- name: GetAllAssetsWithLikesInformation :many
 SELECT a.id, a.uid, a.title, a.slug, a."assetUrl", a."assetType", a."thumbnailUrl", a."gaussianUrl", a."pointCloudUrl", a."isPrivate", a.status, a.likes, a."createdAt", a."updatedAt",
     u.name,
@@ -217,13 +298,25 @@ SELECT a.id, a.uid, a.title, a.slug, a."assetUrl", a."assetType", a."thumbnailUr
     CASE
         WHEN l.uid = $1 THEN TRUE
         ELSE FALSE
-    END AS "isLikedByMe"
+    END AS "isLikedByMe",
+    (
+        SELECT ARRAY_AGG(t.name)
+        FROM "tags" AS t
+            INNER JOIN "assetsToTags" AS att ON att."tagsId" = t.id
+        WHERE att."assetsId" = a.id
+    ) AS tag_names
 FROM "assets" AS a
     LEFT JOIN "users" AS u ON u.uid = a.uid
     LEFT JOIN "likes" AS l ON l."assetsId" = a.id
     AND l.uid = $1
+WHERE a.title LIKE '%' || $2 || '%'
 ORDER BY a."createdAt" DESC
 `
+
+type GetAllAssetsWithLikesInformationParams struct {
+	Uid     uuid.UUID      `json:"uid"`
+	Column2 sql.NullString `json:"column_2"`
+}
 
 type GetAllAssetsWithLikesInformationRow struct {
 	ID            uuid.UUID      `json:"id"`
@@ -244,10 +337,11 @@ type GetAllAssetsWithLikesInformationRow struct {
 	Avatar        sql.NullString `json:"avatar"`
 	Email         sql.NullString `json:"email"`
 	IsLikedByMe   bool           `json:"isLikedByMe"`
+	TagNames      []string       `json:"tag_names"`
 }
 
-func (q *Queries) GetAllAssetsWithLikesInformation(ctx context.Context, uid uuid.UUID) ([]GetAllAssetsWithLikesInformationRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllAssetsWithLikesInformation, uid)
+func (q *Queries) GetAllAssetsWithLikesInformation(ctx context.Context, arg GetAllAssetsWithLikesInformationParams) ([]GetAllAssetsWithLikesInformationRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllAssetsWithLikesInformation, arg.Uid, arg.Column2)
 	if err != nil {
 		return nil, err
 	}
@@ -274,6 +368,7 @@ func (q *Queries) GetAllAssetsWithLikesInformation(ctx context.Context, uid uuid
 			&i.Avatar,
 			&i.Email,
 			&i.IsLikedByMe,
+			pq.Array(&i.TagNames),
 		); err != nil {
 			return nil, err
 		}
@@ -396,13 +491,25 @@ SELECT a.id, a.uid, a.title, a.slug, a."assetUrl", a."assetType", a."thumbnailUr
     CASE
         WHEN l.uid = $1 THEN TRUE
         ELSE FALSE
-    END AS "isLikedByMe"
+    END AS "isLikedByMe",
+    (
+        SELECT ARRAY_AGG(t.name)
+        FROM "tags" AS t
+            INNER JOIN "assetsToTags" AS att ON att."tagsId" = t.id
+        WHERE att."assetsId" = a.id
+    ) AS tag_names
 FROM "assets" AS a
     LEFT JOIN "likes" AS l ON l."assetsId" = a.id
     AND l.uid = $1
 WHERE a.uid = $1
+    AND a.title LIKE '%' || $2 || '%'
 ORDER BY "createdAt" DESC
 `
+
+type GetMyAssetsParams struct {
+	Uid     uuid.UUID      `json:"uid"`
+	Column2 sql.NullString `json:"column_2"`
+}
 
 type GetMyAssetsRow struct {
 	ID            uuid.UUID      `json:"id"`
@@ -420,10 +527,11 @@ type GetMyAssetsRow struct {
 	CreatedAt     time.Time      `json:"createdAt"`
 	UpdatedAt     time.Time      `json:"updatedAt"`
 	IsLikedByMe   sql.NullBool   `json:"isLikedByMe"`
+	TagNames      []string       `json:"tag_names"`
 }
 
-func (q *Queries) GetMyAssets(ctx context.Context, uid uuid.UUID) ([]GetMyAssetsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getMyAssets, uid)
+func (q *Queries) GetMyAssets(ctx context.Context, arg GetMyAssetsParams) ([]GetMyAssetsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getMyAssets, arg.Uid, arg.Column2)
 	if err != nil {
 		return nil, err
 	}
@@ -447,6 +555,7 @@ func (q *Queries) GetMyAssets(ctx context.Context, uid uuid.UUID) ([]GetMyAssets
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.IsLikedByMe,
+			pq.Array(&i.TagNames),
 		); err != nil {
 			return nil, err
 		}

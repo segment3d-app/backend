@@ -37,13 +37,19 @@ func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (Tags, err
 }
 
 const getTagsByKeyword = `-- name: GetTagsByKeyword :many
-SELECT id, name, slug, "createdAt", "updatedAt" FROM tags
-WHERE name LIKE '%' || $1 || '%' 
-LIMIT 5
+SELECT id, name, slug, "createdAt", "updatedAt" 
+FROM tags
+WHERE name LIKE '%' || $1 || '%'
+LIMIT $2
 `
 
-func (q *Queries) GetTagsByKeyword(ctx context.Context, dollar_1 sql.NullString) ([]Tags, error) {
-	rows, err := q.db.QueryContext(ctx, getTagsByKeyword, dollar_1)
+type GetTagsByKeywordParams struct {
+	Column1 sql.NullString `json:"column_1"`
+	Limit   int64          `json:"limit"`
+}
+
+func (q *Queries) GetTagsByKeyword(ctx context.Context, arg GetTagsByKeywordParams) ([]Tags, error) {
+	rows, err := q.db.QueryContext(ctx, getTagsByKeyword, arg.Column1, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

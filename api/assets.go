@@ -190,7 +190,7 @@ func (server *Server) createAsset(ctx *gin.Context) {
 
 	var allTags []db.Tags
 	allTags = append(allTags, tags...)
-	
+
 	for _, curTag := range req.Tags {
 		createTag := true
 		for _, tag := range tags {
@@ -211,13 +211,13 @@ func (server *Server) createAsset(ctx *gin.Context) {
 			}
 
 			allTags = append(allTags, tag)
-		}	
+		}
 	}
 
 	for _, tag := range allTags {
 		_, err := server.store.CreateAssetsToTags(ctx, db.CreateAssetsToTagsParams{
 			AssetsId: asset.ID,
-			TagsId: tag.ID,
+			TagsId:   tag.ID,
 		})
 
 		if err != nil {
@@ -274,6 +274,11 @@ func publishGenerateColmapEvent(server *Server, ginCtx *gin.Context, asset *db.A
 	return *asset, nil
 }
 
+type getAllAssetsQuery struct {
+	Keyword string `form:"keyword"`
+	Filter  string `form:"filter"`
+}
+
 type getAllAssetsResponse struct {
 	Message string          `json:"message"`
 	Assets  []AssetResponse `json:"assets"`
@@ -281,25 +286,60 @@ type getAllAssetsResponse struct {
 
 // GetAllAssets godoc
 // @Summary Get all assets
-// @Description Retrieves a list of all assets, including their associated user details.
+// @Description Retrieves a list of all assets, optionally filtered by keyword and tags, including their associated user details.
 // @Tags assets
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param keyword query string false "Keyword for searching assets by title"
+// @Param filter query string false "Comma-separated list of tags to filter the assets"
 // @Success 200 {object} getAllAssetsResponse "Success: Returns all assets."
+// @Failure 400 {object} ErrorResponse "Error: Bad Request"
 // @Failure 500 {object} ErrorResponse "Error: Internal Server Error"
 // @Router /assets [get]
 func (server *Server) getAllAssets(ctx *gin.Context) {
-	payload, err := getUserPayload(ctx)
+	payload, errPayload := getUserPayload(ctx)
+
+	var query getAllAssetsQuery
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	filterValues := strings.Split(query.Filter, ",")
 
 	var formattedAssets []AssetResponse
-	if err != nil {
-		assets, err := server.store.GetAllAssets(ctx)
+	if errPayload != nil {
+		assets, err := server.store.GetAllAssetsByKeyword(ctx, sql.NullString{String: query.Keyword, Valid: true})
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
 		}
-		for _, asset := range assets {
+
+		var filteredAssets []db.GetAllAssetsByKeywordRow
+		if len(query.Filter) > 0 {
+			uniqueAssets := make(map[uuid.UUID]db.GetAllAssetsByKeywordRow)
+
+			for _, asset := range assets {
+				fmt.Println(asset.TagNames, filterValues, len(asset.TagNames), len(filterValues))
+				for _, curTag := range asset.TagNames {
+					for _, tag := range filterValues {
+						if curTag == tag {
+							uniqueAssets[asset.ID] = asset
+							break
+						}
+					}
+				}
+			}
+
+			for _, asset := range uniqueAssets {
+				filteredAssets = append(filteredAssets, asset)
+			}
+		} else {
+			filteredAssets = assets
+		}
+
+		for _, asset := range filteredAssets {
 			var formattedAsset AssetResponse
 			fAsset := db.Assets{
 				ID:            asset.ID,
@@ -327,12 +367,39 @@ func (server *Server) getAllAssets(ctx *gin.Context) {
 			formattedAssets = append(formattedAssets, formattedAsset)
 		}
 	} else {
-		assets, err := server.store.GetAllAssetsWithLikesInformation(ctx, payload.Uid)
+		arg := db.GetAllAssetsWithLikesInformationParams{
+			Uid:     payload.Uid,
+			Column2: sql.NullString{String: query.Keyword, Valid: true},
+		}
+		assets, err := server.store.GetAllAssetsWithLikesInformation(ctx, arg)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
 		}
-		for _, asset := range assets {
+
+		var filteredAssets []db.GetAllAssetsWithLikesInformationRow
+		if len(query.Filter) > 0 {
+			uniqueAssets := make(map[uuid.UUID]db.GetAllAssetsWithLikesInformationRow)
+
+			for _, asset := range assets {
+				for _, curTag := range asset.TagNames {
+					for _, tag := range filterValues {
+						if curTag == tag {
+							uniqueAssets[asset.ID] = asset
+							break
+						}
+					}
+				}
+			}
+
+			for _, asset := range uniqueAssets {
+				filteredAssets = append(filteredAssets, asset)
+			}
+		} else {
+			filteredAssets = assets
+		}
+
+		for _, asset := range filteredAssets {
 			var formattedAsset AssetResponse
 			fAsset := db.Assets{
 				ID:            asset.ID,
@@ -364,6 +431,11 @@ func (server *Server) getAllAssets(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, getAllAssetsResponse{Message: "all assets returned", Assets: formattedAssets})
 }
 
+type getMyAssetsQuery struct {
+	Keyword string `form:"keyword"`
+	Filter  string `form:"filter"`
+}
+
 type getMyAssetsResponse struct {
 	Message string          `json:"message"`
 	Assets  []AssetResponse `json:"assets"`
@@ -371,11 +443,14 @@ type getMyAssetsResponse struct {
 
 // GetMyAssets
 // @Summary Get my assets
-// @Description Retrieves a list of my assets
+// @Description Retrieves a list of my assets, optionally filtered by keyword and tags.
 // @Tags assets
 // @Accept json
 // @Produce json
-// @Success 200 {object} getMyAssetsResponse "Success: Returns all assets."
+// @Param keyword query string false "Keyword for searching assets by title"
+// @Param filter query string false "Comma-separated list of tags to filter the assets"
+// @Success 200 {object} getMyAssetsResponse "Success: Returns all my assets."
+// @Failure 400 {object} ErrorResponse "Error: Bad Request"
 // @Failure 500 {object} ErrorResponse "Error: Internal Server Error"
 // @Security BearerAuth
 // @Router /assets/me [get]
@@ -392,15 +467,52 @@ func (server *Server) getMyAssets(ctx *gin.Context) {
 		return
 	}
 
-	assets, err := server.store.GetMyAssets(ctx, user.Uid)
+	var query getMyAssetsQuery
+	if err = ctx.ShouldBindQuery(&query); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.GetMyAssetsParams{
+		Uid: user.Uid,
+		Column2: sql.NullString{
+			String: query.Keyword,
+			Valid:  true,
+		},
+	}
+
+	assets, err := server.store.GetMyAssets(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
+	filterValues := strings.Split(query.Filter, ",")
+	var filteredAssets []db.GetMyAssetsRow
+	if len(query.Filter) > 0 {
+		uniqueAssets := make(map[uuid.UUID]db.GetMyAssetsRow)
+
+			for _, asset := range assets {
+				for _, curTag := range asset.TagNames {
+					for _, tag := range filterValues {
+						if curTag == tag {
+							uniqueAssets[asset.ID] = asset
+							break
+						}
+					}
+				}
+			}
+
+			for _, asset := range uniqueAssets {
+				filteredAssets = append(filteredAssets, asset)
+			}
+	} else {
+		filteredAssets = assets
+	}
+
 	var formattedAssets []AssetResponse
 
-	for _, asset := range assets {
+	for _, asset := range filteredAssets {
 		var formattedAsset AssetResponse
 		fAsset := db.Assets{
 			ID:            asset.ID,

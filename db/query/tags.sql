@@ -9,5 +9,5 @@ WHERE name = ANY($1);
 -- name: GetTagsByKeyword :many
 SELECT * 
 FROM tags
-WHERE name LIKE '%' || $1 || '%' 
-LIMIT 5;
+WHERE name LIKE '%' || $1 || '%'
+LIMIT $2;

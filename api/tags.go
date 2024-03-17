@@ -9,20 +9,23 @@ import (
 )
 
 type GetTagBySearchKeywordQuery struct {
-	Keyword string `form:"keyword" binding:"required"`
+	Keyword string `form:"keyword"`
+	Limit   int    `form:"limit" binding:"required"`
 }
 
 type GetTagBySearchKeywordResponse struct {
-	Message string `json:"message"`
-	Tags []db.Tags `json:"tags"`
+	Message string    `json:"message"`
+	Tags    []db.Tags `json:"tags"`
 }
 
+// GetTagBySearchKeyword
 // @Summary Get tags by search keyword
 // @Description Retrieves a list of tags that match the given search keyword
 // @Tags tags
 // @Accept  json
 // @Produce  json
 // @Param   keyword query string true "Search keyword"
+// @Param   limit query int true "Limit for number of tags returned"
 // @Success 200 {object} GetTagBySearchKeywordResponse "Success"
 // @Security BearerAuth
 // @Router /tags/search [get]
@@ -33,15 +36,20 @@ func (server *Server) GetTagBySearchKeyword(ctx *gin.Context) {
 		return
 	}
 
-	tags, err := server.store.GetTagsByKeyword(ctx, sql.NullString{String: req.Keyword, Valid: true})
+	arg := db.GetTagsByKeywordParams{
+		Column1: sql.NullString{String: req.Keyword, Valid: true},
+		Limit:   int64(req.Limit),
+	}
+
+	tags, err := server.store.GetTagsByKeyword(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	res := GetTagBySearchKeywordResponse {
+	res := GetTagBySearchKeywordResponse{
 		Message: "tags data retrived succesfully",
-		Tags: tags,
+		Tags:    tags,
 	}
 	ctx.JSON(http.StatusOK, res)
 }

@@ -164,7 +164,7 @@ type googleResponse struct {
 // @Accept json
 // @Produce json
 // @Param request body googleRequest true "Google OAuth token"
-// @Success 200 {object} map[string]interface{} "User info from Google"
+// @Success 200 {object} googleResponse "User info from Google"
 // @Router /auth/google [post]
 func (server *Server) google(ctx *gin.Context) {
 	var req googleRequest

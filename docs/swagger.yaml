@@ -177,6 +177,15 @@ definitions:
     required:
     - token
     type: object
+  api.googleResponse:
+    properties:
+      accessToken:
+        type: string
+      message:
+        type: string
+      user:
+        $ref: '#/definitions/api.UserResponse'
+    type: object
   api.loginUserRequest:
     properties:
       email:
@@ -503,8 +512,7 @@ paths:
         "200":
           description: User info from Google
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/api.googleResponse'
       summary: Google Auth
       tags:
       - auth

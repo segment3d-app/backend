@@ -391,8 +391,7 @@ const docTemplate = `{
                     "200": {
                         "description": "User info from Google",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/api.googleResponse"
                         }
                     }
                 }
@@ -885,6 +884,20 @@ const docTemplate = `{
             "properties": {
                 "token": {
                     "type": "string"
+                }
+            }
+        },
+        "api.googleResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/api.UserResponse"
                 }
             }
         },

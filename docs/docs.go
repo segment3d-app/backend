@@ -389,7 +389,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "User info from Google",
+                        "description": "Succes to login/sign up",
                         "schema": {
                             "$ref": "#/definitions/api.googleResponse"
                         }

@@ -612,16 +612,7 @@
         "api.AssetResponse": {
             "type": "object",
             "properties": {
-                "assetType": {
-                    "type": "string"
-                },
-                "assetUrl": {
-                    "type": "string"
-                },
                 "createdAt": {
-                    "type": "string"
-                },
-                "gaussianUrl": {
                     "type": "string"
                 },
                 "id": {
@@ -636,10 +627,25 @@
                 "likes": {
                     "type": "integer"
                 },
-                "pointCloudUrl": {
+                "pclColmapUrl": {
+                    "type": "string"
+                },
+                "pclUrl": {
+                    "type": "string"
+                },
+                "photoDirUrl": {
+                    "type": "string"
+                },
+                "segmentedPclDirUrl": {
+                    "type": "string"
+                },
+                "segmentedSplatDirUrl": {
                     "type": "string"
                 },
                 "slug": {
+                    "type": "string"
+                },
+                "splatUrl": {
                     "type": "string"
                 },
                 "status": {
@@ -649,6 +655,9 @@
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 },
                 "updatedAt": {
@@ -662,24 +671,20 @@
         "api.CreateAssetRequest": {
             "type": "object",
             "required": [
-                "assetType",
-                "assetUrl",
                 "isPrivate",
-                "title"
+                "photoDirUrl",
+                "title",
+                "type"
             ],
             "properties": {
-                "assetType": {
-                    "type": "string",
-                    "enum": [
-                        "images",
-                        "video"
-                    ]
-                },
-                "assetUrl": {
-                    "type": "string"
-                },
                 "isPrivate": {
                     "type": "boolean"
+                },
+                "pclUrl": {
+                    "type": "string"
+                },
+                "photoDirUrl": {
+                    "type": "string"
                 },
                 "tags": {
                     "type": "array",
@@ -689,6 +694,13 @@
                 },
                 "title": {
                     "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "lidar",
+                        "non_lidar"
+                    ]
                 }
             }
         },

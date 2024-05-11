@@ -16,21 +16,24 @@ import (
 )
 
 type AssetResponse struct {
-	ID            string       `json:"id"`
-	Title         string       `json:"title"`
-	Slug          string       `json:"slug"`
-	AssetType     string       `json:"assetType"`
-	Status        string       `json:"status"`
-	ThumbnailUrl  string       `json:"thumbnailUrl"`
-	AssetUrl      string       `json:"assetUrl"`
-	PointCloudUrl string       `json:"pointCloudUrl"`
-	GaussianUrl   string       `json:"gaussianUrl"`
-	IsPrivate     bool         `json:"isPrivate"`
-	Likes         int64        `json:"likes"`
-	CreatedAt     string       `json:"createdAt"`
-	UpdatedAt     string       `json:"updatedAt"`
-	User          UserResponse `json:"user"`
-	IsLikedByMe   bool         `json:"isLikedByMe"`
+	ID                   string       `json:"id"`
+	Title                string       `json:"title"`
+	Slug                 string       `json:"slug"`
+	Type                 string       `json:"type"`
+	ThumbnailUrl         string       `json:"thumbnailUrl"`
+	PhotoDirUrl          string       `json:"photoDirUrl"`
+	SplatUrl             string       `json:"splatUrl"`
+	PCLUrl               string       `json:"pclUrl"`
+	PCLColmapUrl         string       `json:"pclColmapUrl"`
+	SegmentedPclDirUrl   string       `json:"segmentedPclDirUrl"`
+	SegmentedSplatDirUrl string       `json:"segmentedSplatDirUrl"`
+	IsPrivate            bool         `json:"isPrivate"`
+	Status               string       `json:"status"`
+	Likes                int64        `json:"likes"`
+	CreatedAt            string       `json:"createdAt"`
+	UpdatedAt            string       `json:"updatedAt"`
+	User                 UserResponse `json:"user"`
+	IsLikedByMe          bool         `json:"isLikedByMe"`
 }
 
 type ReturnAssetResponseArg struct {
@@ -41,30 +44,34 @@ type ReturnAssetResponseArg struct {
 
 func ReturnAssetResponse(arg ReturnAssetResponseArg) AssetResponse {
 	return AssetResponse{
-		ID:            arg.Asset.ID.String(),
-		Title:         arg.Asset.Title,
-		Slug:          arg.Asset.Slug,
-		AssetType:     arg.Asset.AssetType,
-		Status:        arg.Asset.Status,
-		ThumbnailUrl:  arg.Asset.ThumbnailUrl,
-		AssetUrl:      arg.Asset.AssetUrl,
-		PointCloudUrl: arg.Asset.PointCloudUrl.String,
-		GaussianUrl:   arg.Asset.GaussianUrl.String,
-		IsPrivate:     arg.Asset.IsPrivate,
-		Likes:         int64(arg.Asset.Likes),
-		CreatedAt:     arg.Asset.CreatedAt.String(),
-		UpdatedAt:     arg.Asset.UpdatedAt.String(),
-		User:          *ReturnUserResponse(arg.User),
-		IsLikedByMe:   arg.IsLikedByMe,
+		ID:                   arg.Asset.ID.String(),
+		Title:                arg.Asset.Title,
+		Slug:                 arg.Asset.Slug,
+		Type:                 arg.Asset.Type,
+		ThumbnailUrl:         arg.Asset.ThumbnailUrl,
+		PhotoDirUrl:          arg.Asset.PhotoDirUrl,
+		SplatUrl:             arg.Asset.SplatUrl.String,
+		PCLUrl:               arg.Asset.PclUrl.String,
+		PCLColmapUrl:         arg.Asset.PclColmapUrl.String,
+		SegmentedPclDirUrl:   arg.Asset.SegmentedPclDirUrl.String,
+		SegmentedSplatDirUrl: arg.Asset.SegmentedSplatDirUrl.String,
+		IsPrivate:            arg.Asset.IsPrivate,
+		Likes:                int64(arg.Asset.Likes),
+		Status:               arg.Asset.Status,
+		CreatedAt:            arg.Asset.CreatedAt.String(),
+		UpdatedAt:            arg.Asset.UpdatedAt.String(),
+		User:                 *ReturnUserResponse(arg.User),
+		IsLikedByMe:          arg.IsLikedByMe,
 	}
 }
 
 type CreateAssetRequest struct {
-	Title     string   `json:"title" binding:"required"`
-	IsPrivate *bool    `json:"isPrivate" binding:"required"`
-	AssetUrl  string   `json:"assetUrl" binding:"required"`
-	AssetType string   `json:"assetType" binding:"required,oneof=images video"`
-	Tags      []string `json:"tags"`
+	Title       string   `json:"title" binding:"required"`
+	IsPrivate   *bool    `json:"isPrivate" binding:"required"`
+	PhotoDirUrl string   `json:"photoDirUrl" binding:"required"`
+	PCLUrl      string   `json:"pclUrl"`
+	Type        string   `json:"type" binding:"required,oneof=lidar non_lidar"`
+	Tags        []string `json:"tags"`
 }
 
 type CreateAssetsResponse struct {
@@ -78,9 +85,9 @@ type getThumbnailResponse struct {
 }
 
 type GenerateColmapEvent struct {
-	AssetID string `json:"asset_id"`
-	Url     string `json:"url"`
-	Type    string `json:"type"`
+	AssetID     string `json:"asset_id"`
+	PhotoDirUrl string `json:"photo_dir_url"`
+	Type        string `json:"type"`
 }
 
 // createAsset creates a new asset with provided details
@@ -131,7 +138,7 @@ func (server *Server) createAsset(ctx *gin.Context) {
 		slug = slug + fmt.Sprintf("-%d", (len(existingSlugs)+1))
 	}
 
-	urlLink := strings.Replace(req.AssetUrl, "files", "thumbnail", -1)
+	urlLink := strings.Replace(req.PhotoDirUrl, "files", "thumbnail", -1)
 
 	resp, err := http.Get(fmt.Sprintf("%s%s", server.config.StorageUrl, urlLink))
 	if err != nil {
@@ -165,8 +172,8 @@ func (server *Server) createAsset(ctx *gin.Context) {
 		Title:        req.Title,
 		Slug:         slug,
 		Status:       "created",
-		AssetUrl:     req.AssetUrl,
-		AssetType:    req.AssetType,
+		PhotoDirUrl:  req.PhotoDirUrl,
+		Type:         req.Type,
 		ThumbnailUrl: response.Url,
 		IsPrivate:    false,
 		Likes:        0,
@@ -180,6 +187,19 @@ func (server *Server) createAsset(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
+	}
+	if len(req.PCLUrl) > 0 {
+		argPCL := db.UpdatePointCloudUrlFromLidarParams{
+			Uid:    user.Uid,
+			ID:     asset.ID,
+			PclUrl: sql.NullString{String: req.PCLUrl, Valid: true},
+		}
+
+		asset, err = server.store.UpdatePointCloudUrlFromLidar(ctx, argPCL)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
 	}
 
 	tags, err := server.store.GetTagsByTagsName(ctx, req.Tags)
@@ -243,9 +263,9 @@ func (server *Server) createAsset(ctx *gin.Context) {
 func publishGenerateColmapEvent(server *Server, ginCtx *gin.Context, asset *db.Assets, user *db.Users) (db.Assets, error) {
 	// generate message
 	msg, err := json.Marshal(GenerateColmapEvent{
-		AssetID: asset.ID.String(),
-		Url:     asset.AssetUrl,
-		Type:    asset.AssetType,
+		AssetID:     asset.ID.String(),
+		PhotoDirUrl: asset.PhotoDirUrl,
+		Type:        asset.Type,
 	})
 	if err != nil {
 		return *asset, err
@@ -341,20 +361,23 @@ func (server *Server) getAllAssets(ctx *gin.Context) {
 		for _, asset := range filteredAssets {
 			var formattedAsset AssetResponse
 			fAsset := db.Assets{
-				ID:            asset.ID,
-				Title:         asset.Title,
-				Slug:          asset.Slug,
-				AssetType:     asset.AssetType,
-				Status:        asset.Status,
-				ThumbnailUrl:  asset.ThumbnailUrl,
-				AssetUrl:      asset.AssetUrl,
-				PointCloudUrl: asset.PointCloudUrl,
-				GaussianUrl:   asset.GaussianUrl,
-				IsPrivate:     asset.IsPrivate,
-				Likes:         asset.Likes,
-				CreatedAt:     asset.CreatedAt,
-				UpdatedAt:     asset.UpdatedAt,
-				Uid:           asset.Uid,
+				ID:                   asset.ID,
+				Uid:                  asset.Uid,
+				Title:                asset.Title,
+				Slug:                 asset.Slug,
+				Type:                 asset.Type,
+				ThumbnailUrl:         asset.ThumbnailUrl,
+				PhotoDirUrl:          asset.PhotoDirUrl,
+				SplatUrl:             asset.SplatUrl,
+				PclUrl:               asset.PclUrl,
+				PclColmapUrl:         asset.PclColmapUrl,
+				SegmentedPclDirUrl:   asset.SegmentedPclDirUrl,
+				SegmentedSplatDirUrl: asset.SegmentedSplatDirUrl,
+				IsPrivate:            asset.IsPrivate,
+				Likes:                asset.Likes,
+				Status:               asset.Status,
+				CreatedAt:            asset.CreatedAt,
+				UpdatedAt:            asset.UpdatedAt,
 			}
 			fUser := db.Users{
 				Uid:    asset.Uid,
@@ -401,20 +424,23 @@ func (server *Server) getAllAssets(ctx *gin.Context) {
 		for _, asset := range filteredAssets {
 			var formattedAsset AssetResponse
 			fAsset := db.Assets{
-				ID:            asset.ID,
-				Title:         asset.Title,
-				Slug:          asset.Slug,
-				AssetType:     asset.AssetType,
-				Status:        asset.Status,
-				ThumbnailUrl:  asset.ThumbnailUrl,
-				AssetUrl:      asset.AssetUrl,
-				PointCloudUrl: asset.PointCloudUrl,
-				GaussianUrl:   asset.GaussianUrl,
-				IsPrivate:     asset.IsPrivate,
-				Likes:         asset.Likes,
-				CreatedAt:     asset.CreatedAt,
-				UpdatedAt:     asset.UpdatedAt,
-				Uid:           asset.Uid,
+				ID:                   asset.ID,
+				Uid:                  asset.Uid,
+				Title:                asset.Title,
+				Slug:                 asset.Slug,
+				Type:                 asset.Type,
+				ThumbnailUrl:         asset.ThumbnailUrl,
+				PhotoDirUrl:          asset.PhotoDirUrl,
+				SplatUrl:             asset.SplatUrl,
+				PclUrl:               asset.PclUrl,
+				PclColmapUrl:         asset.PclColmapUrl,
+				SegmentedPclDirUrl:   asset.SegmentedPclDirUrl,
+				SegmentedSplatDirUrl: asset.SegmentedSplatDirUrl,
+				IsPrivate:            asset.IsPrivate,
+				Likes:                asset.Likes,
+				Status:               asset.Status,
+				CreatedAt:            asset.CreatedAt,
+				UpdatedAt:            asset.UpdatedAt,
 			}
 			fUser := db.Users{
 				Uid:    asset.Uid,
@@ -491,20 +517,20 @@ func (server *Server) getMyAssets(ctx *gin.Context) {
 	if len(query.Filter) > 0 {
 		uniqueAssets := make(map[uuid.UUID]db.GetMyAssetsRow)
 
-			for _, asset := range assets {
-				for _, curTag := range asset.TagNames {
-					for _, tag := range filterValues {
-						if curTag == tag {
-							uniqueAssets[asset.ID] = asset
-							break
-						}
+		for _, asset := range assets {
+			for _, curTag := range asset.TagNames {
+				for _, tag := range filterValues {
+					if curTag == tag {
+						uniqueAssets[asset.ID] = asset
+						break
 					}
 				}
 			}
+		}
 
-			for _, asset := range uniqueAssets {
-				filteredAssets = append(filteredAssets, asset)
-			}
+		for _, asset := range uniqueAssets {
+			filteredAssets = append(filteredAssets, asset)
+		}
 	} else {
 		filteredAssets = assets
 	}
@@ -514,20 +540,23 @@ func (server *Server) getMyAssets(ctx *gin.Context) {
 	for _, asset := range filteredAssets {
 		var formattedAsset AssetResponse
 		fAsset := db.Assets{
-			ID:            asset.ID,
-			Title:         asset.Title,
-			Slug:          asset.Slug,
-			AssetType:     asset.AssetType,
-			Status:        asset.Status,
-			ThumbnailUrl:  asset.ThumbnailUrl,
-			AssetUrl:      asset.AssetUrl,
-			PointCloudUrl: asset.PointCloudUrl,
-			GaussianUrl:   asset.GaussianUrl,
-			IsPrivate:     asset.IsPrivate,
-			Likes:         asset.Likes,
-			CreatedAt:     asset.CreatedAt,
-			UpdatedAt:     asset.UpdatedAt,
-			Uid:           asset.Uid,
+			ID:                   asset.ID,
+			Uid:                  asset.Uid,
+			Title:                asset.Title,
+			Slug:                 asset.Slug,
+			Type:                 asset.Type,
+			ThumbnailUrl:         asset.ThumbnailUrl,
+			PhotoDirUrl:          asset.PhotoDirUrl,
+			SplatUrl:             asset.SplatUrl,
+			PclUrl:               asset.PclUrl,
+			PclColmapUrl:         asset.PclColmapUrl,
+			SegmentedPclDirUrl:   asset.SegmentedPclDirUrl,
+			SegmentedSplatDirUrl: asset.SegmentedSplatDirUrl,
+			IsPrivate:            asset.IsPrivate,
+			Likes:                asset.Likes,
+			Status:               asset.Status,
+			CreatedAt:            asset.CreatedAt,
+			UpdatedAt:            asset.UpdatedAt,
 		}
 		formattedAsset = ReturnAssetResponse(ReturnAssetResponseArg{Asset: &fAsset, User: &user, IsLikedByMe: asset.IsLikedByMe.Bool})
 
@@ -603,9 +632,10 @@ type UpdatePointCloudUrlResponse struct {
 }
 
 type GenerateSplatEvent struct {
-	AssetID string `json:"asset_id"`
-	Url     string `json:"url"`
-	Type    string `json:"type"`
+	AssetID      string `json:"asset_id"`
+	PhotoDirUrl  string `json:"photo_dir_url"`
+	PCLColmapUrl string `json:"pcl_colmap_url"`
+	Type         string `json:"type"`
 }
 
 // UpdatePointCloudUrl updates the URL of a point cloud asset
@@ -644,13 +674,13 @@ func (server *Server) updatePointCloudUrl(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.UpdatePointCloudUrlParams{
-		Uid:           payload.Uid,
-		ID:            uuid.MustParse(param.ID),
-		PointCloudUrl: sql.NullString{String: req.URL, Valid: true},
+	arg := db.UpdatePointCloudUrlFromColmapParams{
+		Uid:          payload.Uid,
+		ID:           uuid.MustParse(param.ID),
+		PclColmapUrl: sql.NullString{String: req.URL, Valid: true},
 	}
 
-	asset, err := server.store.UpdatePointCloudUrl(ctx, arg)
+	asset, err := server.store.UpdatePointCloudUrlFromColmap(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, errorResponse(err))
 		return
@@ -673,9 +703,10 @@ func (server *Server) updatePointCloudUrl(ctx *gin.Context) {
 func publishGenerateGaussianEvent(server *Server, ginCtx *gin.Context, asset *db.Assets, user *db.Users) (db.Assets, error) {
 	// generate message
 	msg, err := json.Marshal(GenerateSplatEvent{
-		AssetID: asset.ID.String(),
-		Url:     asset.PointCloudUrl.String,
-		Type:    asset.AssetType,
+		AssetID:      asset.ID.String(),
+		PhotoDirUrl:  asset.PhotoDirUrl,
+		PCLColmapUrl: asset.PclColmapUrl.String,
+		Type:         asset.Type,
 	})
 	if err != nil {
 		return *asset, err
@@ -759,13 +790,13 @@ func (server *Server) updateGaussianUrl(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.UpdateGaussianUrlParams{
-		Uid:         payload.Uid,
-		ID:          uuid.MustParse(param.ID),
-		GaussianUrl: sql.NullString{String: req.URL, Valid: true},
+	arg := db.UpdateSplatUrlParams{
+		Uid:      payload.Uid,
+		ID:       uuid.MustParse(param.ID),
+		SplatUrl: sql.NullString{String: req.URL, Valid: true},
 	}
 
-	asset, err = server.store.UpdateGaussianUrl(ctx, arg)
+	asset, err = server.store.UpdateSplatUrl(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, errorResponse(err))
 		return

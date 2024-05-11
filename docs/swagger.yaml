@@ -2,13 +2,7 @@ basePath: /api
 definitions:
   api.AssetResponse:
     properties:
-      assetType:
-        type: string
-      assetUrl:
-        type: string
       createdAt:
-        type: string
-      gaussianUrl:
         type: string
       id:
         type: string
@@ -18,15 +12,27 @@ definitions:
         type: boolean
       likes:
         type: integer
-      pointCloudUrl:
+      pclColmapUrl:
+        type: string
+      pclUrl:
+        type: string
+      photoDirUrl:
+        type: string
+      segmentedPclDirUrl:
+        type: string
+      segmentedSplatDirUrl:
         type: string
       slug:
+        type: string
+      splatUrl:
         type: string
       status:
         type: string
       thumbnailUrl:
         type: string
       title:
+        type: string
+      type:
         type: string
       updatedAt:
         type: string
@@ -35,26 +41,28 @@ definitions:
     type: object
   api.CreateAssetRequest:
     properties:
-      assetType:
-        enum:
-        - images
-        - video
-        type: string
-      assetUrl:
-        type: string
       isPrivate:
         type: boolean
+      pclUrl:
+        type: string
+      photoDirUrl:
+        type: string
       tags:
         items:
           type: string
         type: array
       title:
         type: string
+      type:
+        enum:
+        - lidar
+        - non_lidar
+        type: string
     required:
-    - assetType
-    - assetUrl
     - isPrivate
+    - photoDirUrl
     - title
+    - type
     type: object
   api.CreateAssetsResponse:
     properties:

@@ -618,16 +618,7 @@ const docTemplate = `{
         "api.AssetResponse": {
             "type": "object",
             "properties": {
-                "assetType": {
-                    "type": "string"
-                },
-                "assetUrl": {
-                    "type": "string"
-                },
                 "createdAt": {
-                    "type": "string"
-                },
-                "gaussianUrl": {
                     "type": "string"
                 },
                 "id": {
@@ -642,10 +633,25 @@ const docTemplate = `{
                 "likes": {
                     "type": "integer"
                 },
-                "pointCloudUrl": {
+                "pclColmapUrl": {
+                    "type": "string"
+                },
+                "pclUrl": {
+                    "type": "string"
+                },
+                "photoDirUrl": {
+                    "type": "string"
+                },
+                "segmentedPclDirUrl": {
+                    "type": "string"
+                },
+                "segmentedSplatDirUrl": {
                     "type": "string"
                 },
                 "slug": {
+                    "type": "string"
+                },
+                "splatUrl": {
                     "type": "string"
                 },
                 "status": {
@@ -655,6 +661,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 },
                 "updatedAt": {
@@ -668,24 +677,20 @@ const docTemplate = `{
         "api.CreateAssetRequest": {
             "type": "object",
             "required": [
-                "assetType",
-                "assetUrl",
                 "isPrivate",
-                "title"
+                "photoDirUrl",
+                "title",
+                "type"
             ],
             "properties": {
-                "assetType": {
-                    "type": "string",
-                    "enum": [
-                        "images",
-                        "video"
-                    ]
-                },
-                "assetUrl": {
-                    "type": "string"
-                },
                 "isPrivate": {
                     "type": "boolean"
+                },
+                "pclUrl": {
+                    "type": "string"
+                },
+                "photoDirUrl": {
+                    "type": "string"
                 },
                 "tags": {
                     "type": "array",
@@ -695,6 +700,13 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "lidar",
+                        "non_lidar"
+                    ]
                 }
             }
         },

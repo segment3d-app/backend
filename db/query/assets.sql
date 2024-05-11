@@ -4,8 +4,8 @@ INSERT INTO "assets" (
         title,
         slug,
         status,
-        "assetUrl",
-        "assetType",
+        "photoDirUrl",
+        "type",
         "thumbnailUrl",
         "isPrivate",
         likes
@@ -99,21 +99,21 @@ DELETE FROM "assets"
 WHERE uid = $1
     AND id = $2
 RETURNING *;
--- name: UpdatePointCloudUrl :one
+-- name: UpdatePointCloudUrlFromLidar :one
 UPDATE "assets"
-SET "pointCloudUrl" = $3
+SET "pclUrl" = $3
 WHERE uid = $1
     and id = $2
 RETURNING *;
--- name: UpdateAssetUrl :one
+-- name: UpdatePointCloudUrlFromColmap :one
 UPDATE "assets"
-SET "assetUrl" = $3
+SET "pclColmapUrl" = $3
 WHERE uid = $1
     and id = $2
 RETURNING *;
--- name: UpdateGaussianUrl :one
+-- name: UpdateSplatUrl :one
 UPDATE "assets"
-SET "gaussianUrl" = $3,
+SET "splatUrl" = $3,
     "status" = CASE
         WHEN "status" = 'generating splat' THEN 'completed'
         ELSE "status"

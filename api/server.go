@@ -70,6 +70,7 @@ func (server *Server) setupRouter() {
 	// asset api
 	optionalAutenticatedRouter.GET("/api/assets", server.getAllAssets)
 	authenticatedRouter.POST("/api/assets", server.createAsset)
+	authenticatedRouter.GET("/api/assets/:slug", server.getAssetDetails)
 	authenticatedRouter.GET("/api/assets/me", server.getMyAssets)
 	authenticatedRouter.DELETE("/api/assets/:id", server.removeAsset)
 	authenticatedRouter.PATCH("/api/assets/pointcloud/:id", server.updatePointCloudUrl)

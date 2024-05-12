@@ -566,6 +566,76 @@ func (server *Server) getMyAssets(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, getMyAssetsResponse{Message: "all assets returned", Assets: formattedAssets})
 }
 
+// GetAssetDetails
+// @Summary Get asset details
+// @Description Get asset details by slug
+// @Tags assets
+// @Accept json
+// @Produce json
+// @Param slug path string true "Asset Slug"
+// @Success 200 {object} getAssetDetailsResponse "Success response"
+// @Failure 400 {object} errorResponse "Bad request"
+// @Failure 500 {object} errorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /assets/{slug} [get]
+type getAssetDetailsParams struct {
+	Slug string `uri:"slug"`
+}
+
+type getAssetDetailsResponse struct {
+	Asset   AssetResponse `json:"asset"`
+	Message string        `json:"message"`
+}
+
+func (server *Server) getAssetDetails(ctx *gin.Context) {
+	payload, err := getUserPayload(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	var req getAssetDetailsParams
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	asset, err := server.store.GetAssetsBySlug(ctx, req.Slug)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	creator, err := server.store.GetUserById(ctx, asset.Uid)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	checkIsLikeArg := db.CheckIsLikedParams{
+		Uid:      payload.Uid,
+		AssetsId: asset.ID,
+	}
+	isLikedByMe, err := server.store.CheckIsLiked(ctx, checkIsLikeArg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	assetResponseArg := ReturnAssetResponseArg{
+		Asset:       &asset,
+		User:        &creator,
+		IsLikedByMe: isLikedByMe,
+	}
+
+	res := getAssetDetailsResponse{
+		Asset:   ReturnAssetResponse(assetResponseArg),
+		Message: "success to get assetDetails",
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
 type removeAssetRequest struct {
 	ID string `uri:"id"`
 }

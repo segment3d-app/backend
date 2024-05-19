@@ -773,20 +773,18 @@ func (q *Queries) UpdateAssetStatus(ctx context.Context, arg UpdateAssetStatusPa
 
 const updatePointCloudUrlFromColmap = `-- name: UpdatePointCloudUrlFromColmap :one
 UPDATE "assets"
-SET "pclColmapUrl" = $3
-WHERE uid = $1
-    and id = $2
+SET "pclColmapUrl" = $2
+WHERE id = $1
 RETURNING id, uid, title, slug, type, "thumbnailUrl", "photoDirUrl", "splatUrl", "pclUrl", "pclColmapUrl", "segmentedPclDirUrl", "segmentedSplatDirUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
 `
 
 type UpdatePointCloudUrlFromColmapParams struct {
-	Uid          uuid.UUID      `json:"uid"`
 	ID           uuid.UUID      `json:"id"`
 	PclColmapUrl sql.NullString `json:"pclColmapUrl"`
 }
 
 func (q *Queries) UpdatePointCloudUrlFromColmap(ctx context.Context, arg UpdatePointCloudUrlFromColmapParams) (Assets, error) {
-	row := q.db.QueryRowContext(ctx, updatePointCloudUrlFromColmap, arg.Uid, arg.ID, arg.PclColmapUrl)
+	row := q.db.QueryRowContext(ctx, updatePointCloudUrlFromColmap, arg.ID, arg.PclColmapUrl)
 	var i Assets
 	err := row.Scan(
 		&i.ID,
@@ -851,24 +849,22 @@ func (q *Queries) UpdatePointCloudUrlFromLidar(ctx context.Context, arg UpdatePo
 
 const updateSplatUrl = `-- name: UpdateSplatUrl :one
 UPDATE "assets"
-SET "splatUrl" = $3,
+SET "splatUrl" = $2,
     "status" = CASE
         WHEN "status" = 'generating splat' THEN 'completed'
         ELSE "status"
     END
-WHERE uid = $1
-    and id = $2
+WHERE id = $1
 RETURNING id, uid, title, slug, type, "thumbnailUrl", "photoDirUrl", "splatUrl", "pclUrl", "pclColmapUrl", "segmentedPclDirUrl", "segmentedSplatDirUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
 `
 
 type UpdateSplatUrlParams struct {
-	Uid      uuid.UUID      `json:"uid"`
 	ID       uuid.UUID      `json:"id"`
 	SplatUrl sql.NullString `json:"splatUrl"`
 }
 
 func (q *Queries) UpdateSplatUrl(ctx context.Context, arg UpdateSplatUrlParams) (Assets, error) {
-	row := q.db.QueryRowContext(ctx, updateSplatUrl, arg.Uid, arg.ID, arg.SplatUrl)
+	row := q.db.QueryRowContext(ctx, updateSplatUrl, arg.ID, arg.SplatUrl)
 	var i Assets
 	err := row.Scan(
 		&i.ID,

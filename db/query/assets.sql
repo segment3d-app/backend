@@ -107,19 +107,17 @@ WHERE uid = $1
 RETURNING *;
 -- name: UpdatePointCloudUrlFromColmap :one
 UPDATE "assets"
-SET "pclColmapUrl" = $3
-WHERE uid = $1
-    and id = $2
+SET "pclColmapUrl" = $2
+WHERE id = $1
 RETURNING *;
 -- name: UpdateSplatUrl :one
 UPDATE "assets"
-SET "splatUrl" = $3,
+SET "splatUrl" = $2,
     "status" = CASE
         WHEN "status" = 'generating splat' THEN 'completed'
         ELSE "status"
     END
-WHERE uid = $1
-    and id = $2
+WHERE id = $1
 RETURNING *;
 -- name: UpdateAssetStatus :one
 UPDATE "assets"

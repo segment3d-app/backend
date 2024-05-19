@@ -73,8 +73,8 @@ func (server *Server) setupRouter() {
 	authenticatedRouter.GET("/api/assets/:slug", server.getAssetDetails)
 	authenticatedRouter.GET("/api/assets/me", server.getMyAssets)
 	authenticatedRouter.DELETE("/api/assets/:id", server.removeAsset)
-	authenticatedRouter.PATCH("/api/assets/pointcloud/:id", server.updatePointCloudUrl)
-	authenticatedRouter.PATCH("/api/assets/gaussian/:id", server.updateGaussianUrl)
+	router.PATCH("/api/assets/pointcloud/:id", server.updatePointCloudUrl)
+	router.PATCH("/api/assets/gaussian/:id", server.updateGaussianUrl)
 	authenticatedRouter.POST("/api/assets/like/:id", server.likeAsset)
 	authenticatedRouter.POST("/api/assets/unlike/:id", server.unlikeAsset)
 

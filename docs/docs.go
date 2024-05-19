@@ -17,11 +17,6 @@ const docTemplate = `{
     "paths": {
         "/assets": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Retrieves a list of all assets, optionally filtered by keyword and tags, including their associated user details.",
                 "consumes": [
                     "application/json"
@@ -108,11 +103,6 @@ const docTemplate = `{
         },
         "/assets/gaussian/{id}": {
             "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Updates the URL for a specific gaussian asset based on the provided ID",
                 "consumes": [
                     "application/json"
@@ -245,11 +235,6 @@ const docTemplate = `{
         },
         "/assets/pointcloud/{id}": {
             "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Updates the URL for a specific point cloud asset based on the provided ID",
                 "consumes": [
                     "application/json"

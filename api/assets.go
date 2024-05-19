@@ -310,7 +310,6 @@ type getAllAssetsResponse struct {
 // @Tags assets
 // @Accept json
 // @Produce json
-// @Security BearerAuth
 // @Param keyword query string false "Keyword for searching assets by title"
 // @Param filter query string false "Comma-separated list of tags to filter the assets"
 // @Success 200 {object} getAllAssetsResponse "Success: Returns all assets."
@@ -717,15 +716,8 @@ type GenerateSplatEvent struct {
 // @Param   id   path   string     true  "Asset ID"
 // @Param   request  body   UpdatePointCloudUrlRequest     true  "Update Point Cloud URL Request"
 // @Success 200 {object} UpdatePointCloudUrlResponse "URL updated successfully"
-// @Security BearerAuth
 // @Router /assets/pointcloud/{id} [patch]
 func (server *Server) updatePointCloudUrl(ctx *gin.Context) {
-	payload, err := getUserPayload(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
 	var req UpdatePointCloudUrlRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -738,19 +730,18 @@ func (server *Server) updatePointCloudUrl(ctx *gin.Context) {
 		return
 	}
 
-	user, err := server.store.GetUserById(ctx, payload.Uid)
-	if err != nil {
-		ctx.JSON(http.StatusNotFound, errorResponse(err))
-		return
-	}
-
 	arg := db.UpdatePointCloudUrlFromColmapParams{
-		Uid:          payload.Uid,
 		ID:           uuid.MustParse(param.ID),
 		PclColmapUrl: sql.NullString{String: req.URL, Valid: true},
 	}
 
 	asset, err := server.store.UpdatePointCloudUrlFromColmap(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserById(ctx, asset.Uid)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, errorResponse(err))
 		return
@@ -827,15 +818,8 @@ type UpdateGaussianUrlResponse struct {
 // @Param   id   path   string     true  "Asset ID"
 // @Param   request  body   UpdateGaussianUrlRequest     true  "Update Gaussian URL Request"
 // @Success 200 {object} UpdateGaussianUrlResponse "URL updated successfully"
-// @Security BearerAuth
 // @Router /assets/gaussian/{id} [patch]
 func (server *Server) updateGaussianUrl(ctx *gin.Context) {
-	payload, err := getUserPayload(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
 	var req UpdateGaussianUrlRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -848,12 +832,6 @@ func (server *Server) updateGaussianUrl(ctx *gin.Context) {
 		return
 	}
 
-	user, err := server.store.GetUserById(ctx, payload.Uid)
-	if err != nil {
-		ctx.JSON(http.StatusNotFound, errorResponse(err))
-		return
-	}
-
 	asset, err := server.store.GetAssetsById(ctx, uuid.MustParse(param.ID))
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -861,12 +839,17 @@ func (server *Server) updateGaussianUrl(ctx *gin.Context) {
 	}
 
 	arg := db.UpdateSplatUrlParams{
-		Uid:      payload.Uid,
 		ID:       uuid.MustParse(param.ID),
 		SplatUrl: sql.NullString{String: req.URL, Valid: true},
 	}
 
 	asset, err = server.store.UpdateSplatUrl(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserById(ctx, asset.Uid)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, errorResponse(err))
 		return

@@ -85,9 +85,10 @@ type getThumbnailResponse struct {
 }
 
 type GenerateColmapEvent struct {
-	AssetID     string `json:"asset_id"`
-	PhotoDirUrl string `json:"photo_dir_url"`
-	Type        string `json:"type"`
+	AssetID       string `json:"asset_id"`
+	PhotoDirUrl   string `json:"photo_dir_url"`
+	Type          string `json:"type"`
+	PointCloudUrl string `json:"point_cloud_url"`
 }
 
 // createAsset creates a new asset with provided details
@@ -263,9 +264,10 @@ func (server *Server) createAsset(ctx *gin.Context) {
 func publishGenerateColmapEvent(server *Server, ginCtx *gin.Context, asset *db.Assets, user *db.Users) (db.Assets, error) {
 	// generate message
 	msg, err := json.Marshal(GenerateColmapEvent{
-		AssetID:     asset.ID.String(),
-		PhotoDirUrl: asset.PhotoDirUrl,
-		Type:        asset.Type,
+		AssetID:       asset.ID.String(),
+		PhotoDirUrl:   asset.PhotoDirUrl,
+		Type:          asset.Type,
+		PointCloudUrl: asset.PclUrl.String,
 	})
 	if err != nil {
 		return *asset, err
@@ -763,20 +765,20 @@ func (server *Server) updatePointCloudUrl(ctx *gin.Context) {
 
 func publishGenerateGaussianEvent(server *Server, ginCtx *gin.Context, asset *db.Assets, user *db.Users) (db.Assets, error) {
 	// generate message
-	msg, err := json.Marshal(GenerateSplatEvent{
-		AssetID:      asset.ID.String(),
-		PhotoDirUrl:  asset.PhotoDirUrl,
-		PCLColmapUrl: asset.PclColmapUrl.String,
-		Type:         asset.Type,
-	})
-	if err != nil {
-		return *asset, err
-	}
+	// msg, err := json.Marshal(GenerateSplatEvent{
+	// 	AssetID:      asset.ID.String(),
+	// 	PhotoDirUrl:  asset.PhotoDirUrl,
+	// 	PCLColmapUrl: asset.PclColmapUrl.String,
+	// 	Type:         asset.Type,
+	// })
+	// if err != nil {
+	// 	return *asset, err
+	// }
 
-	err = server.rabbitmq.PublishEvent("generate_splat", msg)
-	if err != nil {
-		return *asset, err
-	}
+	// err = server.rabbitmq.PublishEvent("generate_splat", msg)
+	// if err != nil {
+	// 	return *asset, err
+	// }
 
 	if asset.Status == "generating colmap" {
 		arg := db.UpdateAssetStatusParams{

@@ -75,6 +75,8 @@ func (server *Server) setupRouter() {
 	authenticatedRouter.DELETE("/api/assets/:id", server.removeAsset)
 	router.PATCH("/api/assets/pointcloud/:id", server.updatePointCloudUrl)
 	router.PATCH("/api/assets/gaussian/:id", server.updateGaussianUrl)
+	router.PATCH("/api/assets/ptv3/:id", server.updatePTv3Url)
+	router.PATCH("/api/assets/saga/:id", server.updateSagaUrl)
 	authenticatedRouter.POST("/api/assets/like/:id", server.likeAsset)
 	authenticatedRouter.POST("/api/assets/unlike/:id", server.unlikeAsset)
 

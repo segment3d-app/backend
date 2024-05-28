@@ -268,6 +268,88 @@
                 }
             }
         },
+        "/assets/ptv3/{id}": {
+            "patch": {
+                "description": "Updates the URL for a specific PTv3 asset based on the provided ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assets"
+                ],
+                "summary": "Update PTv3 URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update PTv3 URL Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.UpdatePTV3UrlRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.UpdatePTV3UrlResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/assets/saga/{id}": {
+            "patch": {
+                "description": "Updates the URL for a specific saga asset based on the provided ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assets"
+                ],
+                "summary": "Update saga URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Saga URL Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.UpdateSagaUrlRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.UpdateSagaUrlResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/assets/unlike/{id}": {
             "post": {
                 "security": [
@@ -766,6 +848,28 @@
                 }
             }
         },
+        "api.UpdatePTV3UrlRequest": {
+            "type": "object",
+            "required": [
+                "url"
+            ],
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.UpdatePTV3UrlResponse": {
+            "type": "object",
+            "properties": {
+                "asset": {
+                    "$ref": "#/definitions/api.AssetResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "api.UpdatePointCloudUrlRequest": {
             "type": "object",
             "required": [
@@ -778,6 +882,28 @@
             }
         },
         "api.UpdatePointCloudUrlResponse": {
+            "type": "object",
+            "properties": {
+                "asset": {
+                    "$ref": "#/definitions/api.AssetResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.UpdateSagaUrlRequest": {
+            "type": "object",
+            "required": [
+                "url"
+            ],
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.UpdateSagaUrlResponse": {
             "type": "object",
             "properties": {
                 "asset": {

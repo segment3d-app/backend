@@ -110,13 +110,19 @@ UPDATE "assets"
 SET "pclColmapUrl" = $2
 WHERE id = $1
 RETURNING *;
+-- name: UpdateSagaUrl :one
+UPDATE "assets"
+SET "segmentedSplatDirUrl" = $2
+WHERE id = $1
+RETURNING *;
+-- name: UpdatePTvUrl :one
+UPDATE "assets"
+SET "segmentedPclDirUrl" = $2
+WHERE id = $1
+RETURNING *;
 -- name: UpdateSplatUrl :one
 UPDATE "assets"
-SET "splatUrl" = $2,
-    "status" = CASE
-        WHEN "status" = 'generating splat' THEN 'completed'
-        ELSE "status"
-    END
+SET "splatUrl" = $2
 WHERE id = $1
 RETURNING *;
 -- name: UpdateAssetStatus :one

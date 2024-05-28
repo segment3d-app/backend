@@ -282,7 +282,7 @@ func publishGenerateColmapEvent(server *Server, ginCtx *gin.Context, asset *db.A
 		arg := db.UpdateAssetStatusParams{
 			Uid:    user.Uid,
 			ID:     asset.ID,
-			Status: "generating colmap",
+			Status: "generating sparse point cloud",
 		}
 
 		newAsset, err := server.store.UpdateAssetStatus(ginCtx, arg)
@@ -749,10 +749,18 @@ func (server *Server) updatePointCloudUrl(ctx *gin.Context) {
 		return
 	}
 
-	asset, err = publishGenerateGaussianEvent(server, ctx, &asset, &user)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
+	if asset.Status == "generating sparse point cloud" {
+		arg := db.UpdateAssetStatusParams{
+			Uid:    user.Uid,
+			ID:     asset.ID,
+			Status: "generating 3d splat",
+		}
+
+		asset, err = server.store.UpdateAssetStatus(ctx, arg)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
 	}
 
 	res := UpdatePointCloudUrlResponse{
@@ -761,41 +769,6 @@ func (server *Server) updatePointCloudUrl(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, res)
-}
-
-func publishGenerateGaussianEvent(server *Server, ginCtx *gin.Context, asset *db.Assets, user *db.Users) (db.Assets, error) {
-	// generate message
-	// msg, err := json.Marshal(GenerateSplatEvent{
-	// 	AssetID:      asset.ID.String(),
-	// 	PhotoDirUrl:  asset.PhotoDirUrl,
-	// 	PCLColmapUrl: asset.PclColmapUrl.String,
-	// 	Type:         asset.Type,
-	// })
-	// if err != nil {
-	// 	return *asset, err
-	// }
-
-	// err = server.rabbitmq.PublishEvent("generate_splat", msg)
-	// if err != nil {
-	// 	return *asset, err
-	// }
-
-	if asset.Status == "generating colmap" {
-		arg := db.UpdateAssetStatusParams{
-			Uid:    user.Uid,
-			ID:     asset.ID,
-			Status: "generating splat",
-		}
-
-		newAsset, err := server.store.UpdateAssetStatus(ginCtx, arg)
-		if err != nil {
-			return *asset, nil
-		}
-
-		return newAsset, nil
-	}
-
-	return *asset, nil
 }
 
 type UpdateGaussianUrlRequest struct {
@@ -857,7 +830,183 @@ func (server *Server) updateGaussianUrl(ctx *gin.Context) {
 		return
 	}
 
+	if asset.Status == "generating 3d splat" {
+		arg := db.UpdateAssetStatusParams{
+			Uid:    user.Uid,
+			ID:     asset.ID,
+			Status: "processing ptv3",
+		}
+
+		asset, err = server.store.UpdateAssetStatus(ctx, arg)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	}
+
 	res := UpdateGaussianUrlResponse{
+		Message: "update success",
+		Asset:   ReturnAssetResponse(ReturnAssetResponseArg{Asset: &asset, User: &user}),
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+type UpdatePTV3UrlRequest struct {
+	URL string `json:"url" binding:"required"`
+}
+
+type UpdatePTV3UrlParam struct {
+	ID string `uri:"id" binding:"required"`
+}
+
+type UpdatePTV3UrlResponse struct {
+	Message string        `json:"message"`
+	Asset   AssetResponse `json:"asset"`
+}
+
+// UpdatePTV3Url updates the URL of a PTv3 asset
+// @Summary Update PTv3 URL
+// @Description Updates the URL for a specific PTv3 asset based on the provided ID
+// @Tags assets
+// @Accept json
+// @Produce json
+// @Param   id   path   string     true  "Asset ID"
+// @Param   request  body   UpdatePTV3UrlRequest     true  "Update PTv3 URL Request"
+// @Success 200 {object} UpdatePTV3UrlResponse "URL updated successfully"
+// @Router /assets/ptv3/{id} [patch]
+func (server *Server) updatePTv3Url(ctx *gin.Context) {
+	var req UpdatePTV3UrlRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var param UpdatePTV3UrlParam
+	if err := ctx.ShouldBindUri(&param); err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	asset, err := server.store.GetAssetsById(ctx, uuid.MustParse(param.ID))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	arg := db.UpdatePTvUrlParams{
+		ID:       uuid.MustParse(param.ID),
+		SegmentedPclDirUrl: sql.NullString{String: req.URL, Valid: true},
+	}
+
+	asset, err = server.store.UpdatePTvUrl(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserById(ctx, asset.Uid)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	if asset.Status == "processing ptv3" {
+		arg := db.UpdateAssetStatusParams{
+			Uid:    user.Uid,
+			ID:     asset.ID,
+			Status: "processing saga",
+		}
+
+		asset, err = server.store.UpdateAssetStatus(ctx, arg)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	}
+
+	res := UpdatePTV3UrlResponse{
+		Message: "update success",
+		Asset:   ReturnAssetResponse(ReturnAssetResponseArg{Asset: &asset, User: &user}),
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+type UpdateSagaUrlRequest struct {
+	URL string `json:"url" binding:"required"`
+}
+
+type UpdateSagaUrlParam struct {
+	ID string `uri:"id" binding:"required"`
+}
+
+type UpdateSagaUrlResponse struct {
+	Message string        `json:"message"`
+	Asset   AssetResponse `json:"asset"`
+}
+
+// UpdateSagaUrl updates the URL of a saga asset
+// @Summary Update saga URL
+// @Description Updates the URL for a specific saga asset based on the provided ID
+// @Tags assets
+// @Accept json
+// @Produce json
+// @Param   id   path   string     true  "Asset ID"
+// @Param   request  body   UpdateSagaUrlRequest     true  "Update Saga URL Request"
+// @Success 200 {object} UpdateSagaUrlResponse "URL updated successfully"
+// @Router /assets/saga/{id} [patch]
+func (server *Server) updateSagaUrl(ctx *gin.Context) {
+	var req UpdateSagaUrlRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var param UpdateSagaUrlParam
+	if err := ctx.ShouldBindUri(&param); err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	asset, err := server.store.GetAssetsById(ctx, uuid.MustParse(param.ID))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	arg := db.UpdateSagaUrlParams{
+		ID:       uuid.MustParse(param.ID),
+		SegmentedSplatDirUrl: sql.NullString{String: req.URL, Valid: true},
+	}
+
+	asset, err = server.store.UpdateSagaUrl(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserById(ctx, asset.Uid)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	if asset.Status == "processing saga" {
+		arg := db.UpdateAssetStatusParams{
+			Uid:    user.Uid,
+			ID:     asset.ID,
+			Status: "completed",
+		}
+
+		asset, err = server.store.UpdateAssetStatus(ctx, arg)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	}
+
+	res := UpdateSagaUrlResponse{
 		Message: "update success",
 		Asset:   ReturnAssetResponse(ReturnAssetResponseArg{Asset: &asset, User: &user}),
 	}

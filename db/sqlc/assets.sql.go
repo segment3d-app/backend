@@ -771,6 +771,43 @@ func (q *Queries) UpdateAssetStatus(ctx context.Context, arg UpdateAssetStatusPa
 	return i, err
 }
 
+const updatePTvUrl = `-- name: UpdatePTvUrl :one
+UPDATE "assets"
+SET "segmentedPclDirUrl" = $2
+WHERE id = $1
+RETURNING id, uid, title, slug, type, "thumbnailUrl", "photoDirUrl", "splatUrl", "pclUrl", "pclColmapUrl", "segmentedPclDirUrl", "segmentedSplatDirUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
+`
+
+type UpdatePTvUrlParams struct {
+	ID                 uuid.UUID      `json:"id"`
+	SegmentedPclDirUrl sql.NullString `json:"segmentedPclDirUrl"`
+}
+
+func (q *Queries) UpdatePTvUrl(ctx context.Context, arg UpdatePTvUrlParams) (Assets, error) {
+	row := q.db.QueryRowContext(ctx, updatePTvUrl, arg.ID, arg.SegmentedPclDirUrl)
+	var i Assets
+	err := row.Scan(
+		&i.ID,
+		&i.Uid,
+		&i.Title,
+		&i.Slug,
+		&i.Type,
+		&i.ThumbnailUrl,
+		&i.PhotoDirUrl,
+		&i.SplatUrl,
+		&i.PclUrl,
+		&i.PclColmapUrl,
+		&i.SegmentedPclDirUrl,
+		&i.SegmentedSplatDirUrl,
+		&i.IsPrivate,
+		&i.Status,
+		&i.Likes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updatePointCloudUrlFromColmap = `-- name: UpdatePointCloudUrlFromColmap :one
 UPDATE "assets"
 SET "pclColmapUrl" = $2
@@ -847,13 +884,46 @@ func (q *Queries) UpdatePointCloudUrlFromLidar(ctx context.Context, arg UpdatePo
 	return i, err
 }
 
+const updateSagaUrl = `-- name: UpdateSagaUrl :one
+UPDATE "assets"
+SET "segmentedSplatDirUrl" = $2
+WHERE id = $1
+RETURNING id, uid, title, slug, type, "thumbnailUrl", "photoDirUrl", "splatUrl", "pclUrl", "pclColmapUrl", "segmentedPclDirUrl", "segmentedSplatDirUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
+`
+
+type UpdateSagaUrlParams struct {
+	ID                   uuid.UUID      `json:"id"`
+	SegmentedSplatDirUrl sql.NullString `json:"segmentedSplatDirUrl"`
+}
+
+func (q *Queries) UpdateSagaUrl(ctx context.Context, arg UpdateSagaUrlParams) (Assets, error) {
+	row := q.db.QueryRowContext(ctx, updateSagaUrl, arg.ID, arg.SegmentedSplatDirUrl)
+	var i Assets
+	err := row.Scan(
+		&i.ID,
+		&i.Uid,
+		&i.Title,
+		&i.Slug,
+		&i.Type,
+		&i.ThumbnailUrl,
+		&i.PhotoDirUrl,
+		&i.SplatUrl,
+		&i.PclUrl,
+		&i.PclColmapUrl,
+		&i.SegmentedPclDirUrl,
+		&i.SegmentedSplatDirUrl,
+		&i.IsPrivate,
+		&i.Status,
+		&i.Likes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateSplatUrl = `-- name: UpdateSplatUrl :one
 UPDATE "assets"
-SET "splatUrl" = $2,
-    "status" = CASE
-        WHEN "status" = 'generating splat' THEN 'completed'
-        ELSE "status"
-    END
+SET "splatUrl" = $2
 WHERE id = $1
 RETURNING id, uid, title, slug, type, "thumbnailUrl", "photoDirUrl", "splatUrl", "pclUrl", "pclColmapUrl", "segmentedPclDirUrl", "segmentedSplatDirUrl", "isPrivate", status, likes, "createdAt", "updatedAt"
 `

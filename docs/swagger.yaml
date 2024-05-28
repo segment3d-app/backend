@@ -113,6 +113,20 @@ definitions:
       message:
         type: string
     type: object
+  api.UpdatePTV3UrlRequest:
+    properties:
+      url:
+        type: string
+    required:
+    - url
+    type: object
+  api.UpdatePTV3UrlResponse:
+    properties:
+      asset:
+        $ref: '#/definitions/api.AssetResponse'
+      message:
+        type: string
+    type: object
   api.UpdatePointCloudUrlRequest:
     properties:
       url:
@@ -121,6 +135,20 @@ definitions:
     - url
     type: object
   api.UpdatePointCloudUrlResponse:
+    properties:
+      asset:
+        $ref: '#/definitions/api.AssetResponse'
+      message:
+        type: string
+    type: object
+  api.UpdateSagaUrlRequest:
+    properties:
+      url:
+        type: string
+    required:
+    - url
+    type: object
+  api.UpdateSagaUrlResponse:
     properties:
       asset:
         $ref: '#/definitions/api.AssetResponse'
@@ -471,6 +499,62 @@ paths:
           schema:
             $ref: '#/definitions/api.UpdatePointCloudUrlResponse'
       summary: Update point cloud URL
+      tags:
+      - assets
+  /assets/ptv3/{id}:
+    patch:
+      consumes:
+      - application/json
+      description: Updates the URL for a specific PTv3 asset based on the provided
+        ID
+      parameters:
+      - description: Asset ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update PTv3 URL Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpdatePTV3UrlRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL updated successfully
+          schema:
+            $ref: '#/definitions/api.UpdatePTV3UrlResponse'
+      summary: Update PTv3 URL
+      tags:
+      - assets
+  /assets/saga/{id}:
+    patch:
+      consumes:
+      - application/json
+      description: Updates the URL for a specific saga asset based on the provided
+        ID
+      parameters:
+      - description: Asset ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Saga URL Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpdateSagaUrlRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL updated successfully
+          schema:
+            $ref: '#/definitions/api.UpdateSagaUrlResponse'
+      summary: Update saga URL
       tags:
       - assets
   /assets/unlike/{id}:

@@ -273,7 +273,7 @@ func publishGenerateColmapEvent(server *Server, ginCtx *gin.Context, asset *db.A
 		return *asset, err
 	}
 
-	err = server.rabbitmq.PublishEvent("generate_colmap", msg)
+	err = server.rabbitmq.PublishEvent("process", msg)
 	if err != nil {
 		return *asset, err
 	}

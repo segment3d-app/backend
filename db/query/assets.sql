@@ -53,7 +53,7 @@ SELECT a.*,
     ) AS tag_names
 FROM "assets" AS a
     LEFT JOIN "users" AS u ON u.uid = a.uid
-WHERE a.title LIKE '%' || $1 || '%'
+WHERE a.title LIKE '%' || $1 || '%' and a."isPrivate" = false
 ORDER BY a."createdAt" DESC;
 -- name: GetAllAssetsWithLikesInformation :many
 SELECT a.*,
@@ -74,7 +74,7 @@ FROM "assets" AS a
     LEFT JOIN "users" AS u ON u.uid = a.uid
     LEFT JOIN "likes" AS l ON l."assetsId" = a.id
     AND l.uid = $1
-WHERE a.title LIKE '%' || $2 || '%'
+WHERE a.title LIKE '%' || $2 || '%' and a."isPrivate" = false
 ORDER BY a."createdAt" DESC;
 -- name: GetMyAssets :many
 SELECT a.*,

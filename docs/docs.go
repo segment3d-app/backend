@@ -315,6 +315,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/assets/saga/segment/{id}": {
+            "post": {
+                "description": "Segment using SAGA by sending message to RabbitMQ",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assets"
+                ],
+                "summary": "Segment using SAGA",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Segment using SAGA Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SegmentUsingSagaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Segment using SAGA successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.SegmentUsingSagaResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/assets/saga/{id}": {
             "patch": {
                 "description": "Updates the URL for a specific saga asset based on the provided ID",
@@ -817,6 +858,40 @@ const docTemplate = `{
                     "$ref": "#/definitions/api.AssetResponse"
                 },
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.SegmentUsingSagaRequest": {
+            "type": "object",
+            "required": [
+                "uniqueIdentifier",
+                "url",
+                "x",
+                "y"
+            ],
+            "properties": {
+                "uniqueIdentifier": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "x": {
+                    "type": "integer"
+                },
+                "y": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.SegmentUsingSagaResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 }
             }

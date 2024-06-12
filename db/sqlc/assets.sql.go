@@ -235,7 +235,7 @@ SELECT a.id, a.uid, a.title, a.slug, a.type, a."thumbnailUrl", a."photoDirUrl", 
     ) AS tag_names
 FROM "assets" AS a
     LEFT JOIN "users" AS u ON u.uid = a.uid
-WHERE a.title LIKE '%' || $1 || '%'
+WHERE a.title LIKE '%' || $1 || '%' and a."isPrivate" = false
 ORDER BY a."createdAt" DESC
 `
 
@@ -327,7 +327,7 @@ FROM "assets" AS a
     LEFT JOIN "users" AS u ON u.uid = a.uid
     LEFT JOIN "likes" AS l ON l."assetsId" = a.id
     AND l.uid = $1
-WHERE a.title LIKE '%' || $2 || '%'
+WHERE a.title LIKE '%' || $2 || '%' and a."isPrivate" = false
 ORDER BY a."createdAt" DESC
 `
 

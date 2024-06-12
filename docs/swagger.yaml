@@ -92,6 +92,29 @@ definitions:
       message:
         type: string
     type: object
+  api.SegmentUsingSagaRequest:
+    properties:
+      uniqueIdentifier:
+        type: string
+      url:
+        type: string
+      x:
+        type: integer
+      "y":
+        type: integer
+    required:
+    - uniqueIdentifier
+    - url
+    - x
+    - "y"
+    type: object
+  api.SegmentUsingSagaResponse:
+    properties:
+      message:
+        type: string
+      url:
+        type: string
+    type: object
   api.UnlikeAssetResponse:
     properties:
       asset:
@@ -555,6 +578,33 @@ paths:
           schema:
             $ref: '#/definitions/api.UpdateSagaUrlResponse'
       summary: Update saga URL
+      tags:
+      - assets
+  /assets/saga/segment/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Segment using SAGA by sending message to RabbitMQ
+      parameters:
+      - description: Asset ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Segment using SAGA Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.SegmentUsingSagaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Segment using SAGA successfully
+          schema:
+            $ref: '#/definitions/api.SegmentUsingSagaResponse'
+      summary: Segment using SAGA
       tags:
       - assets
   /assets/unlike/{id}:

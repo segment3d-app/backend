@@ -895,7 +895,7 @@ func (server *Server) updatePTv3Url(ctx *gin.Context) {
 	}
 
 	arg := db.UpdatePTvUrlParams{
-		ID:       uuid.MustParse(param.ID),
+		ID:                 uuid.MustParse(param.ID),
 		SegmentedPclDirUrl: sql.NullString{String: req.URL, Valid: true},
 	}
 
@@ -976,7 +976,7 @@ func (server *Server) updateSagaUrl(ctx *gin.Context) {
 	}
 
 	arg := db.UpdateSagaUrlParams{
-		ID:       uuid.MustParse(param.ID),
+		ID:                   uuid.MustParse(param.ID),
 		SegmentedSplatDirUrl: sql.NullString{String: req.URL, Valid: true},
 	}
 
@@ -1154,4 +1154,94 @@ func (server *Server) unlikeAsset(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, res)
+}
+
+type SegmentUsingSagaRequest struct {
+	X                int    `json:"x" binding:"required"`
+	Y                int    `json:"y" binding:"required"`
+	URL              string `json:"url" binding:"required"`
+	UniqueIdentifier string `json:"uniqueIdentifier" binding:"required"`
+}
+
+type SegmentUsingSagaParam struct {
+	ID string `uri:"id" binding:"required"`
+}
+
+type SegmentUsingSagaResponse struct {
+	Message string `json:"message"`
+	Url     string `json:"url"`
+}
+
+// SegmentUsingSaga Segment using SAGA
+// @Summary Segment using SAGA
+// @Description Segment using SAGA by sending message to RabbitMQ
+// @Tags assets
+// @Accept json
+// @Produce json
+// @Param   id   path   string     true  "Asset ID"
+// @Param   request  body   SegmentUsingSagaRequest     true  "Segment using SAGA Request"
+// @Success 200 {object} SegmentUsingSagaResponse "Segment using SAGA successfully"
+// @Router /assets/saga/segment/{id} [post]
+func (server *Server) segmentUsingSaga(ctx *gin.Context) {
+	var req SegmentUsingSagaRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var param SegmentUsingSagaParam
+	if err := ctx.ShouldBindUri(&param); err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	asset, err := server.store.GetAssetsById(ctx, uuid.MustParse(param.ID))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	err = publishSegmentUsingSagaEvent(server, GenerateSegmentUsingSagaEvent{
+		AssetID: asset.ID.String(),
+		X: req.X,
+		Y: req.Y,
+		URL: req.URL,
+		UniqueIdentifier: req.UniqueIdentifier,
+	})
+
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	res := SegmentUsingSagaResponse {
+		Message: "success",
+		Url: fmt.Sprintf("/files/%s/%s.ply", asset.ID.String(), req.UniqueIdentifier),
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+type GenerateSegmentUsingSagaEvent struct {
+	AssetID          string `json:"asset_id"`
+	X                int    `json:"x"`
+	Y                int    `json:"y"`
+	UniqueIdentifier string `json:"unique_identifier"`
+	URL              string `json:"url"`
+}
+
+func publishSegmentUsingSagaEvent(server *Server, message GenerateSegmentUsingSagaEvent) error {
+	// generate message
+	msg, err := json.Marshal(message)
+
+	if err != nil {
+		return err
+	}
+
+	err = server.rabbitmq.PublishEvent("query", msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

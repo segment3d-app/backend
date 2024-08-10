@@ -31,8 +31,8 @@ Ensure you have the following tools installed on your machine:
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/segment3d-app/segment3d-be.git
-    cd segment3d-be
+    git clone https://github.com/segment3d-app/backend.git
+    cd backend
     ```
 
 2.  **Install dependencies:**

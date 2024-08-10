@@ -1,6 +1,6 @@
-# Segment3d API
+# Segment3D Backend
 
-Welcome to the Segment3d API project! This API provides functionality for Segment3d Mobile and Web Apps.
+This project is a part of the backend service for the Segment3D App. It is built using Go, a statically typed, compiled programming language designed for simplicity and performance. The API provides core functionality for both the Segment3D Mobile and Web applications. For database management, the project uses PostgreSQL, and it leverages Docker for containerization, ensuring consistency across different development and production environments. Additionally, the project utilizes Air for live reloading during development, streamlining the development process by automatically restarting the server on code changes.
 
 ## Table of Contents
 
@@ -10,6 +10,8 @@ Welcome to the Segment3d API project! This API provides functionality for Segmen
   - [Configuration](#configuration)
 - [Usage](#usage)
   - [Running the Server](#running-the-server)
+  - [Running with Docker Compose](#running-with-docker-compose)
+  - [Running All Segment3d Services](#running-all-segment3d-services)
   - [API Documentation](#api-documentation)
 - [License](#license)
 
@@ -21,6 +23,8 @@ Ensure you have the following tools installed on your machine:
 
 - [Go v1.21.6](https://go.dev/dl/)
 - [Docker](https://hub.docker.com/)
+- [Scoop](https://scoop.sh/) (for Windows) or [Homebrew](https://brew.sh/) (for macOS) (to install additional tools like `golang-migrate`)
+- [Air](https://github.com/cosmtrek/air) (for live reloading during development)
 
 ### Installation
 
@@ -29,7 +33,6 @@ Ensure you have the following tools installed on your machine:
     ```bash
     git clone https://github.com/segment3d-app/segment3d-be.git
     cd segment3d-be
-
     ```
 
 2.  **Install dependencies:**
@@ -64,21 +67,28 @@ Ensure you have the following tools installed on your machine:
 
 ### Configuration
 
-1. **Create PostgreSQL Container simply by running makefile script:**
+1. **Create PostgreSQL Container simply by running the Makefile script:**
 
    ```bash
-    make run-postgres
+   make run-postgres
    ```
 
 2. **Create Database Schema:**
 
    ```bash
-    make create-db
+   make create-db
    ```
 
 3. **Run Migrations:**
+
    ```bash
-    make migrate-up
+   make migrate-up
+   ```
+
+4. **Copy the `.env.example` file to `.env`:**
+
+   ```bash
+   cp .env.example .env
    ```
 
 ## Usage
@@ -89,7 +99,30 @@ Ensure you have the following tools installed on your machine:
 make server-dev
 ```
 
-# API Documentation
+### Running with Docker Compose
+
+You can also run the entire application using Docker Compose. This will set up the necessary containers for the backend and any other services you may have.
+
+1. **Build and start the application using Docker Compose:**
+
+    ```bash
+    docker-compose up --build
+    ```
+
+    This command will build the Docker image and start the containers, and you can access the API at `http://localhost:8080`.
+
+2. **Stop the application:**
+
+    To stop the running containers, use:
+
+    ```bash
+    docker-compose down
+    ```
+
+### Running All Services
+If you want to run all services, you can visit [Deployment Master Services](https://github.com/segment3d-app/deployment-master)
+
+### API Documentation
 
 To access the API documentation, visit the Swagger documentation at `http://localhost:8080/swagger/index.html` after starting the server.
 

@@ -20,10 +20,10 @@
 vendor/
 
 # Configuration files
-app.env
 config.toml
 config.yaml
 config.json
+.env
 
 # Build or output directories
 bin/

@@ -13,7 +13,7 @@ RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/
     mv migrate /usr/local/bin/migrate
 WORKDIR /app
 COPY --from=builder /app/main .
-COPY --from=builder /app/app.env .
+COPY --from=builder /app/.env .
 COPY --from=builder /app/Makefile .
 COPY --from=builder /app/db ./db
 

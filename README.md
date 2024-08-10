@@ -67,25 +67,33 @@ Ensure you have the following tools installed on your machine:
 
 ### Configuration
 
-1. **Create PostgreSQL Container simply by running the Makefile script:**
+1. **Create RabbitMQ Container simply by running the Makefile script:**
+
+   ```bash
+   make run-rabbitmq
+   make rabbitmq-up
+   ```
+
+2. **Create and run PostgreSQL Container simply by running the Makefile script:**
 
    ```bash
    make run-postgres
+   make postgres-up
    ```
 
-2. **Create Database Schema:**
+3. **Create Database Schema:**
 
    ```bash
    make create-db
    ```
 
-3. **Run Migrations:**
+4. **Run Migrations:**
 
    ```bash
    make migrate-up
    ```
 
-4. **Copy the `.env.example` file to `.env`:**
+5. **Copy the `.env.example` file to `.env`:**
 
    ```bash
    cp .env.example .env
@@ -105,21 +113,22 @@ You can also run the entire application using Docker Compose. This will set up t
 
 1. **Build and start the application using Docker Compose:**
 
-    ```bash
-    docker-compose up --build
-    ```
+   ```bash
+   docker-compose up --build
+   ```
 
-    This command will build the Docker image and start the containers, and you can access the API at `http://localhost:8080`.
+   This command will build the Docker image and start the containers, and you can access the API at `http://localhost:8080`.
 
 2. **Stop the application:**
 
-    To stop the running containers, use:
+   To stop the running containers, use:
 
-    ```bash
-    docker-compose down
-    ```
+   ```bash
+   docker-compose down
+   ```
 
 ### Running All Services
+
 If you want to run all services, you can visit [Deployment Master Services](https://github.com/segment3d-app/deployment-master)
 
 ### API Documentation

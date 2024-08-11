@@ -22,7 +22,7 @@ This project is a part of the backend service for the Segment3D App. It is built
 Ensure you have the following tools installed on your machine:
 
 - [Go v1.21.6](https://go.dev/dl/)
-- [Docker](https://hub.docker.com/)
+- [Docker](https://hub.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
 - [Scoop](https://scoop.sh/) (for Windows) or [Homebrew](https://brew.sh/) (for macOS) (to install additional tools like `golang-migrate`)
 - [Air](https://github.com/cosmtrek/air) (for live reloading during development)
 
